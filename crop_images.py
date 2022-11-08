@@ -1,10 +1,13 @@
-import cv2, sys, os
-from math import ceil
-from glob import glob
 import os
+import sys
+from glob import glob
+from math import ceil
+
+import cv2
 
 interpolation = cv2.INTER_CUBIC
 borderMode = cv2.BORDER_REPLICATE
+
 
 def crop_face(img, bbox, crop_sz, bbox_ext, extra_pad=0):
     shape = img.shape
@@ -28,17 +31,27 @@ def crop_face(img, bbox, crop_sz, bbox_ext, extra_pad=0):
         replicate = cv2.copyMakeBorder(img, pad, pad, pad, pad, borderMode)
     else:
         replicate = img
-    cropped = replicate[int(pad + y - h * bbox_ext - jitt_pad) : int(pad + y + h * (1 + bbox_ext) + jitt_pad), 
-                        int(pad + x - w * bbox_ext - jitt_pad) : int(pad + x + w * (1 + bbox_ext) + jitt_pad)]
-    resized = cv2.resize(cropped, (crop_sz + 2*extra_pad, crop_sz + 2*extra_pad), interpolation=interpolation)
+    cropped = replicate[
+        int(pad + y - h * bbox_ext - jitt_pad) : int(
+            pad + y + h * (1 + bbox_ext) + jitt_pad
+        ),
+        int(pad + x - w * bbox_ext - jitt_pad) : int(
+            pad + x + w * (1 + bbox_ext) + jitt_pad
+        ),
+    ]
+    resized = cv2.resize(
+        cropped,
+        (crop_sz + 2 * extra_pad, crop_sz + 2 * extra_pad),
+        interpolation=interpolation,
+    )
     return resized
 
 
-def process_db_casia(db_dir, save_dir, scale, crop_sz):
+def process_db_zalo(db_dir, save_dir, scale, crop_sz):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    file_list = open(save_dir + "/file_list.txt", "w") # save info
-    for file in open(db_dir+"/file_list.txt","r"):
+    file_list = open(save_dir + "/file_list.txt", "w")  # save info
+    for file in open(db_dir + "/file_list.txt", "r"):
         print("processing(scale %f): %s" % (scale, file))
         file_info = file.strip("\n").split(" ")
         file_name = file_info[0]
@@ -52,17 +65,17 @@ def process_db_casia(db_dir, save_dir, scale, crop_sz):
         bbox_ext = (scale - 1.0) / 2
         cropped = crop_face(frame, bbox, crop_sz, bbox_ext)
 
-        save_fname = os.path.join(cur_save_dir,file_name.split("/")[-1])
-        file_list.writelines("%s %s\n" % (save_fname,label))
+        save_fname = os.path.join(cur_save_dir, file_name.split("/")[-1])
+        file_list.writelines("%s %s\n" % (save_fname, label))
         cv2.imwrite(save_fname, cropped, [cv2.IMWRITE_JPEG_QUALITY, 100])
 
 
 if __name__ == "__main__":
-    db_dir = 'G:/zalo_challenge/liveness_face/datasets/datasets_train/'
-    save_dir = 'G:/zalo_challenge/liveness_face/datasets/crop/'
+    db_dir = "G:/zalo_challenge/liveness_face/datasets/datasets_train/"
+    save_dir = "G:/zalo_challenge/liveness_face/datasets/crop2/"
 
-    crop_sz = 80
-    scales = [1.0, 2.7,4]
+    crop_sz = 128
+    scales = [1.0]
     for scale in scales:
-        cur_save_dir = save_dir + '/scale_' + str(scale)
-        process_db_casia(db_dir, cur_save_dir, scale, crop_sz)
+        cur_save_dir = save_dir + "/scale_" + str(scale)
+        process_db_zalo(db_dir, cur_save_dir, scale, crop_sz)
