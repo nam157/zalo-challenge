@@ -1,14 +1,18 @@
 import os
+import warnings
 
 import torch
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.nn import functional as F
 from torch.utils import data
 
+import utils
 from load_data import Data
-from model import Net
+from models.net import Net
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+warnings.filterwarnings("ignore")
 
 
 def train(net, dataloader, optimizer, epoch):
@@ -30,33 +34,54 @@ def train(net, dataloader, optimizer, epoch):
 
         if e % 5 == 0:
             print("the loss is", loss.item())
-            torch.save(net, "./model.pt")
+            torch.save(net, f"model_scale_{2.7}.pth")
+            val(net, test_data_loader, e)
+
+
+def val(net, dataloader, e):
+    net.eval()
+    scores = []
+    all_y = []
+    for batch_idx, (X, y) in enumerate(dataloader):
+
+        X, y = X.to(device), y.to(device).view(-1,)
+        optimizer.zero_grad()
+        output = net(X)
+        scores.extend(F.softmax(output).detach().cpu().numpy()[:, 1:])
+        all_y.extend(y.cpu().numpy())
+
+    print("epoch %d " % (e))
+    utils.EER(all_y, scores)
+    utils.HTER(all_y, scores, 0.5)
 
 
 if __name__ == "__main__":
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    # Detect devices
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")  # use CPU or GPU
     learning_rate = 0.01
 
     params = (
-        {"batch_size": 4, "shuffle": True, "num_workers": 0, "pin_memory": True}
+        {"batch_size": 1, "shuffle": False, "num_workers": 0, "pin_memory": True}
         if use_cuda
         else {}
     )
     if use_cuda:
         net = Net(2).to(device)
-    if (
-        torch.cuda.device_count() > 1
-    ):  # if train using DataParallel,test must using DataParallel
+    if torch.cuda.device_count() > 1:
         print("Using", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(net)
 
-    train_data_set = Data(
-        "G:/zalo_challenge/liveness_face/datasets/crop2/scale_1.0/", True
+    dataset = Data(
+        "/home/eco0936_namnh/CODE/Silent-Face-Anti-Spoofing/datasets/crops/scale_2.7/",
+        True,
     )
-    # test_data_set = Data("/home/userwyh/code/dataset/CASIA_scale/scale_2.2/",False)
+    train_data_set, valid_data_set = train_test_split(
+        dataset, test_size=0.15, random_state=121
+    )
     train_data_loader = data.DataLoader(train_data_set, **params)
-    # test_data_loader = data.DataLoader(test_data_set, **params)
-
+    test_data_loader = data.DataLoader(valid_data_set, **params)
     optimizer = torch.optim.SGD(list(net.parameters()), lr=learning_rate)
-    train(net, train_data_loader, optimizer, 50)
+
+    train(net, dataloader=train_data_loader, optimizer=optimizer, epoch=100)
