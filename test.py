@@ -16,7 +16,7 @@ def generate_bbox(frame):
     return bbox
 
 
-def predict(path_model, input,bbox):
+def predict(path_model, input,bbox,scale=2.7):
     model = torch.load(path_model)
     model.eval()
     if isinstance(input,str):
@@ -26,7 +26,7 @@ def predict(path_model, input,bbox):
     w, h, _ = img.shape
     if w != 128 or h != 128:
         img = cv2.resize(img, (128, 128))
-    scale = 2.7
+        
     param = {
         "img": img,
         "bbox": bbox,
@@ -42,19 +42,13 @@ def predict(path_model, input,bbox):
         result = model(img_crop)
         result = F.softmax(result).detach().cpu().numpy()
     label = np.argmax(result)
+    score = result[0][label]
     if label == 1:
-        result_txt = 'Real face'
+        cv2.rectangle(input, (bbox[0], bbox[1]), (bbox[2],bbox[3]), (255, 0, 1), 2)
+        return score
     else:
-        result_txt = 'Fake face'
-    cv2.rectangle(
-        input, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), (255, 0, 1), 2
-    )
-    cv2.putText(
-        input,
-        result_txt,
-        (bbox[0], bbox[1] - 5),cv2.FONT_HERSHEY_COMPLEX, 0.5*img.shape[0]/1024, (0,255,123))
-
-    return label,result
+        cv2.rectangle(input, (bbox[0], bbox[1]), (bbox[2],bbox[3]), (0, 0, 255), 2)
+        return 1-score
 
 
 if __name__ == "__main__":
@@ -63,8 +57,7 @@ if __name__ == "__main__":
         ret, frame = cap.read()
         try:
             bbox = generate_bbox(frame)
-            label,result = predict(path_model='./model_scale_2.7.pth',input=frame,bbox=bbox)
-            print(label)
+            score = predict(path_model='./model_scale_2.7.pth',input=frame,bbox=bbox,scale = 2.7)
         except:
             break
         cv2.imshow('frame',frame)
