@@ -22,7 +22,7 @@ G:.
         └───datasets
             └───datasets_train        
 ```
-`Step 3: training mode`
+`Step 3: training model`
 ```bash
 python train.py
 ```
