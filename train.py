@@ -34,7 +34,7 @@ def train(net, dataloader, optimizer, epoch):
 
         if e % 5 == 0:
             print("the loss is", loss.item())
-            torch.save(net, f"model_scale_{2.7}.pth")
+            torch.save(net, f"ckpt/model_scale_{2.7}.pth")
             val(net, test_data_loader, e)
 
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     learning_rate = 0.01
 
     params = (
-        {"batch_size": 1, "shuffle": False, "num_workers": 0, "pin_memory": True}
+        {"batch_size": 8, "shuffle": True, "num_workers": 0, "pin_memory": True}
         if use_cuda
         else {}
     )
@@ -74,11 +74,11 @@ if __name__ == "__main__":
         model = nn.DataParallel(net)
 
     dataset = Data(
-        "/home/eco0936_namnh/CODE/Silent-Face-Anti-Spoofing/datasets/crops/scale_2.7/",
+        "G:/zalo_challenge/liveness_face/antispoofing_zalo/datasets/crops/scale_2.7/",
         True,
     )
     train_data_set, valid_data_set = train_test_split(
-        dataset, test_size=0.15, random_state=121
+        dataset, test_size=0.2, random_state=1
     )
     train_data_loader = data.DataLoader(train_data_set, **params)
     test_data_loader = data.DataLoader(valid_data_set, **params)

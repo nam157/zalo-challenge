@@ -145,3 +145,17 @@ def EER(label, score, EERtype="eer"):
     print(EERtype + " " + "thd is :%f" % minTh)
 
     return roc_auc, eer, minTh
+
+
+def parse_model_name(model_name):
+    info = model_name.split("_")
+    h_input, w_input = info[-1].split(".")[0].split("x")
+    if info[2] == "org":
+        scale = None
+    else:
+        scale = float(info[2])
+    return int(h_input), int(w_input), scale
+
+
+if __name__ == "__main__":
+    print(parse_model_name("model_scale_1.0_128x128.pth"))

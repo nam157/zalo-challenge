@@ -67,7 +67,7 @@ def process_zalo(db_dir, save_dir, scale, crop_sz):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     file_list = open(save_dir + "/file_list.txt", "w")
-    for file in open(db_dir + "/file_list.txt", "r"):
+    for file in open(db_dir + "/file_label.txt", "r"):
         file_info = file.strip("\n").split(" ")
         file_name = file_info[0]
         bboxs = file_info[1:5]
@@ -90,9 +90,9 @@ def process_zalo(db_dir, save_dir, scale, crop_sz):
 
 
 if __name__ == "__main__":
-    db_dir = "/home/eco0936_namnh/CODE/Silent-Face-Anti-Spoofing/datasets/frames/"
-    save_dir = "/home/eco0936_namnh/CODE/Silent-Face-Anti-Spoofing/datasets/crops/"
-    scales = [1.0, 2.7, 4]
+    db_dir = "G:/zalo_challenge/liveness_face/antispoofing_zalo/datasets/images_train/datasets/images/"
+    save_dir = "G:/zalo_challenge/liveness_face/antispoofing_zalo/datasets/crops/"
+    scales = [1.0, 2.7]
     crop_sz = 128
     for scale in scales:
         cur_save_dir = save_dir + "/scale_" + str(scale)
