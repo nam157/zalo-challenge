@@ -7,8 +7,10 @@ class Data(data.Dataset):
         self.transforms = transforms
 
     def __getitem__(self, index):
-        img = self.transforms(Image.open(self.file_list[index]).convert("RGB"))
-
+        if self.transforms:
+            img = self.transforms(Image.open(self.file_list[index]).convert("RGB"))
+        else:
+            img = Image.open(self.file_list[index]).convert("RGB")
         label = self.label[index]
         return img, label
 
