@@ -1,12 +1,16 @@
-from model import MultiFTNet
-from torch.nn import CrossEntropyLoss, MSELoss
-import torch
-from sklearn.model_selection import train_test_split
-from torch.nn import functional as F
-from transform import transformer
-from torch.utils.data import DataLoader
-from data import Dataset
+import os
 from tqdm import tqdm
+
+import torch
+from torch.nn import CrossEntropyLoss, MSELoss
+from torch.nn import functional as F
+from torch.utils.data import DataLoader
+from sklearn.model_selection import train_test_split
+
+from data import Dataset
+from model import MultiFTNet
+from transform import transformer
+
 
 def train(num_classes, img_channel, embedding_size, conv6_kernel, epochs, device):
     cls_criterion = CrossEntropyLoss()
@@ -23,6 +27,7 @@ def train(num_classes, img_channel, embedding_size, conv6_kernel, epochs, device
     model = model.to(device)
 
     optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10000, eta_min=1e-7)
 
     labels = open(
         "/home/ai/challenge/darf-nam/zalo-challenge/datasets/img_crops/scale_1/file_label.txt",
@@ -41,12 +46,24 @@ def train(num_classes, img_channel, embedding_size, conv6_kernel, epochs, device
         ft_width=ft_w,
     )
 
-    params = {"batch_size": 32, "shuffle": True, "num_workers": 8, "pin_memory": True}
-    train_data_loader = DataLoader(data, **params)
+    data_val = Dataset(
+        label_list=label_val,
+        transforms=transformer['test'],
+        ft_height=ft_h,
+        ft_width=ft_w,
+    )
 
-    for e in tqdm(range(epochs)):
-        print(f"Epoch: {e}")
-        for img,ft,label in train_data_loader:
+    params = {"batch_size": 64, "shuffle": True, "num_workers": 8, "pin_memory": True}
+    train_data_loader = DataLoader(data, **params)
+    val_data_loader = DataLoader(data_val, **params)
+
+    for e in range(epochs):
+        print(f'Epoch {e}')
+
+        total_train_loss = []
+        total_val_loss = []
+
+        for img,ft,label in tqdm(train_data_loader, desc="Training"):
             img = img.to(device)
             label = label.to(device)
             ft = ft.to(device)
@@ -56,14 +73,41 @@ def train(num_classes, img_channel, embedding_size, conv6_kernel, epochs, device
             loss_cls = cls_criterion(embedding, label)
             loss_fea = ft_criterion(feature_map, ft)
 
-            loss = 0.5 * loss_cls + 0.5 * loss_fea
-            loss.backward()
+            train_loss = 0.5 * loss_cls + 0.5 * loss_fea
+            train_loss.backward()
             optimizer.step()
 
-            print(loss)
+            total_train_loss.append(train_loss)
+
+        log_train_loss = sum(total_train_loss)/len(total_train_loss)
+        
+        print('Train loss: {}'.format(log_train_loss.item()))
+        
+        with torch.no_grad():
+            for img, ft, label in tqdm(val_data_loader, desc="Validation"):
+                img = img.to(device)
+                label = label.to(device)
+                ft = ft.to(device)
+
+                embedding, feature_map = model(img)
+                loss_cls = cls_criterion(embedding, label)
+                loss_fea = ft_criterion(feature_map, ft)
+
+                val_loss = 0.5 * loss_cls + 0.5 * loss_fea
+
+                total_val_loss.append(val_loss)
+
+            log_val_loss = sum(total_val_loss)/len(total_val_loss)
+            print('Val loss: {}'.format(log_val_loss.item()))
+
+        torch.save(model, 'logs/model_epoch_{}.pth')
+        torch.save(optimizer, 'logs/optimizer_epoch_{}.pth')
+
+        scheduler.step()
 
 
 if __name__ == "__main__":
+    os.makedirs('logs/', exist_ok=True)
 
     def get_kernel(height, width):
         kernel_size = ((height + 15) // 16, (width + 15) // 16)
@@ -74,6 +118,6 @@ if __name__ == "__main__":
         img_channel=3,
         embedding_size=128,
         conv6_kernel=get_kernel(128, 128),
-        epochs=100,
-        device=torch.device("cuda"),
+        epochs=500,
+        device=torch.device('cuda'),
     )
