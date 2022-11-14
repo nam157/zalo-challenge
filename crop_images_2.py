@@ -2,6 +2,7 @@ import os
 
 import cv2
 import numpy as np
+from tqdm import tqdm
 
 
 class CropImage:
@@ -63,37 +64,40 @@ class CropImage:
         return dst_img
 
 
-def process_zalo(db_dir, save_dir, scale, crop_sz):
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    file_list = open(save_dir + "/file_list.txt", "w")
-    for file in open(db_dir + "/file_label.txt", "r"):
+def process_crop(input_dir, output_dir, scale, crop_sz):
+    os.makedirs(output_dir, exist_ok=True)
+    output_crop = os.path.join(output_dir, 'crops')
+    os.makedirs(output_crop, exist_ok=True)
+
+    file_list = open(os.path.join(output_dir, "label_crops.txt"), "a")
+
+    with open(os.path.join(input_dir, "face_crops.txt"), "r") as f:
+        bbox_gen = f.readlines()
+        bbox_gen = [each.replace('\n', '') for each in bbox_gen]
+
+    for file in tqdm(bbox_gen, desc="Process scale {}".format(scale)):
         file_info = file.strip("\n").split(" ")
         file_name = file_info[0]
         bboxs = file_info[1:5]
         bboxs = [int(bboxs[0]), int(bboxs[1]), int(bboxs[2]), int(bboxs[3])]
         label = file_info[5]
-        cur_save_dir = os.path.join(save_dir, *file_name.split("/")[-4:-1])
-
-        if not os.path.exists(cur_save_dir):
-            os.makedirs(cur_save_dir)
 
         frame = cv2.imread(file_name)
         croper = CropImage()
         croped = croper.crop(
             frame, bbox=bboxs, scale=scale, out_w=crop_sz, out_h=crop_sz, crop=True
         )
-        print(croped)
-        save_fname = os.path.join(cur_save_dir, file_name.split("/")[-1])
+
+        save_fname = os.path.join(output_crop, os.path.basename(file_name))
         file_list.writelines("%s %s\n" % (save_fname, label))
         cv2.imwrite(save_fname, croped, [cv2.IMWRITE_JPEG_QUALITY, 100])
 
 
 if __name__ == "__main__":
-    db_dir = "G:/zalo_challenge/liveness_face/antispoofing_zalo/datasets/images_train/datasets/images/"
-    save_dir = "G:/zalo_challenge/liveness_face/antispoofing_zalo/datasets/crops/"
-    scales = [1.0, 2.7]
+    input_dir = "/home/ai/datasets/challenge/liveness/generate/0"
+    output_dir = "/home/ai/datasets/challenge/liveness/generate/crop"
+    scales = [1.0, 2.7, 4.0]
     crop_sz = 128
     for scale in scales:
-        cur_save_dir = save_dir + "/scale_" + str(scale)
-        process_zalo(db_dir, cur_save_dir, scale, crop_sz)
+        cur_save_dir = os.path.join(output_dir, "scale_{}".format(str(scale)))
+        process_crop(input_dir, cur_save_dir, scale, crop_sz)
