@@ -19,10 +19,10 @@ MODEL_MAPPING = {
     "MiniFASNetV1SE": MiniFASNetV1SE,
     "MiniFASNetV2SE": MiniFASNetV2SE,
 }
-SCALE = 2.7
+SCALE = 4.0
 HEIGHT = 80
 WIDTH = 80
-MODEL_TYPE = "MiniFASNetV2"
+MODEL_TYPE = "MiniFASNetV1SE"
 
 
 class anti_spoofing:
@@ -68,10 +68,8 @@ class anti_spoofing:
         fh = open(label_path, "r")
         labels = fh.readlines()
         label_train, label_valid = train_test_split(
-            labels, test_size=0.2, random_state=121
+            labels, test_size=0.1, random_state=11
         )
-        kernel_size = get_kernel(80, 80)
-        ft_h, ft_w = 2 * kernel_size[0], 2 * kernel_size[1]
         data_train = Dataset(
             label_list=label_train,
             transforms=transformer["train"],
@@ -86,9 +84,12 @@ class anti_spoofing:
         return train_data_loader, val_data_loader
 
     def _init_params(self):
-        optimizer = torch.optim.SGD(self.model.parameters(), lr=0.001, momentum=0.9)
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=10000, eta_min=1e-7
+        # optimizer = torch.optim.SGD(self.model.parameters(), lr=0.0001, momentum=0.9)
+        optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=0.001, amsgrad=True, weight_decay=0.00001
+        )
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode="min", factor=0.1
         )
         cls_criterion = CrossEntropyLoss()
 
@@ -128,11 +129,12 @@ class anti_spoofing:
 
         for epoch in range(epochs):
             loss_train = self._train_one_epoch(device=self.device)
+            self.scheduler.step(loss_train)
             loss_val = self._valid_one_epoch(device=self.device)
-            lr = self.optimizer.param_groups[0]['lr']
-            self.writer.add_scalar("Train/Loss", loss_train,epoch)
-            self.writer.add_scalar("Valid/Loss", loss_val,epoch)
-            self.writer.add_scalar('Train/Learning_rate', lr,epoch)
+            lr = self.optimizer.param_groups[0]["lr"]
+            self.writer.add_scalar("Train/Loss", loss_train, epoch)
+            self.writer.add_scalar("Valid/Loss", loss_val, epoch)
+            self.writer.add_scalar("Train/Learning_rate", lr, epoch)
             print(
                 f"Epochs: {epoch}/{epochs}--- Loss-Train: {loss_train} ----- Loss-Valid: {loss_val}"
             )
@@ -143,16 +145,14 @@ class anti_spoofing:
                     self.model.state_dict(),
                     save_dir + f"{SCALE}_{HEIGHT}x{WIDTH}_{MODEL_TYPE}.pth",
                 )
-        self.scheduler.step()
 
 
 if __name__ == "__main__":
     params = {"batch_size": 64, "shuffle": True, "num_workers": 8, "pin_memory": True}
     deep_fake = anti_spoofing(
-        label_path="/home/ai/challenge/datasets/crops_80x80/scale_2.7/file_list.txt",
+        label_path="/home/ai/challenge/datasets/crops_80x80/scale_4.0/file_list.txt",
         params=params,
-        model_path="/home/ai/challenge/test/anti-spoofing/pre-trained/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth",
+        model_path="./pre-trained/anti_spoof_models/4_0_0_80x80_MiniFASNetV1SE.pth",
         pre_trained=True,
     )
-
     deep_fake.fit(epochs=100)

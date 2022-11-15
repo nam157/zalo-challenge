@@ -1,6 +1,3 @@
-
-
-
 def parse_model_name(model_name):
     info = model_name.split("_")[0:-1]
     h_input, w_input = info[-1].split("x")
