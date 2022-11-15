@@ -10,7 +10,8 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from load_data import Dataset, transformer
-from models.MiniFASNet import MiniFASNetV1, MiniFASNetV1SE, MiniFASNetV2, MiniFASNetV2SE
+from models.MiniFASNet import (MiniFASNetV1, MiniFASNetV1SE, MiniFASNetV2,
+                               MiniFASNetV2SE)
 from utils import get_kernel, parse_model_name
 
 MODEL_MAPPING = {
@@ -19,10 +20,10 @@ MODEL_MAPPING = {
     "MiniFASNetV1SE": MiniFASNetV1SE,
     "MiniFASNetV2SE": MiniFASNetV2SE,
 }
-SCALE = 4.0
+SCALE = 2.7
 HEIGHT = 80
 WIDTH = 80
-MODEL_TYPE = "MiniFASNetV1SE"
+MODEL_TYPE = "MiniFASNetV2"
 
 
 class anti_spoofing:
@@ -68,7 +69,7 @@ class anti_spoofing:
         fh = open(label_path, "r")
         labels = fh.readlines()
         label_train, label_valid = train_test_split(
-            labels, test_size=0.1, random_state=11
+            labels, test_size=0.1, random_state=123
         )
         data_train = Dataset(
             label_list=label_train,
@@ -84,10 +85,16 @@ class anti_spoofing:
         return train_data_loader, val_data_loader
 
     def _init_params(self):
-        # optimizer = torch.optim.SGD(self.model.parameters(), lr=0.0001, momentum=0.9)
-        optimizer = torch.optim.Adam(
-            self.model.parameters(), lr=0.001, amsgrad=True, weight_decay=0.00001
+        optimizer = torch.optim.SGD(
+            self.model.parameters(),
+            lr=0.0001,
+            momentum=0.9,
+            nesterov=True,
+            weight_decay=0.000001,
         )
+        # optimizer = torch.optim.Adam(
+        #     self.model.parameters(), lr=0.0001, amsgrad=True, weight_decay=0.00001
+        # )
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, mode="min", factor=0.1
         )
@@ -148,11 +155,11 @@ class anti_spoofing:
 
 
 if __name__ == "__main__":
-    params = {"batch_size": 64, "shuffle": True, "num_workers": 8, "pin_memory": True}
+    params = {"batch_size": 128, "shuffle": True, "num_workers": 8, "pin_memory": True}
     deep_fake = anti_spoofing(
-        label_path="/home/ai/challenge/datasets/crops_80x80/scale_4.0/file_list.txt",
+        label_path="/home/ai/challenge/datasets/crops_80x80/scale_2.7/file_list.txt",
         params=params,
-        model_path="./pre-trained/anti_spoof_models/4_0_0_80x80_MiniFASNetV1SE.pth",
-        pre_trained=True,
+        model_path="./pre-trained/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth",
+        pre_trained=False,
     )
     deep_fake.fit(epochs=100)
