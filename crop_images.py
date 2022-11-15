@@ -56,6 +56,7 @@ def process_db_zalo(db_dir, save_dir, scale, crop_sz):
         file_info = file.strip("\n").split(" ")
         file_name = file_info[0]
         bbox = map(int, file_info[1:5])
+        bbox = [bbox[0], bbox[1], bbox[2]-bbox[0], bbox[3]-bbox[1]]
         label = file_info[5]
 
         cur_save_dir = os.path.join(save_dir, *file_name.split("/")[-4:-1])
