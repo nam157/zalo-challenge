@@ -1,12 +1,20 @@
-# -*- coding: utf-8 -*-
-# @Time : 20-6-3 下午5:14
-# @Author : zhuying
-# @Company : Minivision
-# @File : MultiFTNet.py
-# @Software : PyCharm
+import os
+import torch
 from torch import nn
-import torch.nn.functional as F
-from src.model_lib.MiniFASNet import MiniFASNetV1,MiniFASNetV2,MiniFASNetV1SE,MiniFASNetV2SE
+
+from src.model_lib.MiniFASNet import (
+    MiniFASNetV1,
+    MiniFASNetV1SE,
+    MiniFASNetV2,
+    MiniFASNetV2SE,
+)
+
+MODEL_MAPPING = {
+    "MiniFASNetV1": MiniFASNetV1,
+    "MiniFASNetV2": MiniFASNetV2,
+    "MiniFASNetV1SE": MiniFASNetV1SE,
+    "MiniFASNetV2SE": MiniFASNetV2SE,
+}
 
 
 class FTGenerator(nn.Module):
@@ -17,14 +25,12 @@ class FTGenerator(nn.Module):
             nn.Conv2d(in_channels, 128, kernel_size=(3, 3), padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
-
             nn.Conv2d(128, 64, kernel_size=(3, 3), padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
-
             nn.Conv2d(64, out_channels, kernel_size=(3, 3), padding=1),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
@@ -32,18 +38,31 @@ class FTGenerator(nn.Module):
 
 
 class MultiFTNet(nn.Module):
-    def __init__(self,model_type = MiniFASNetV2 ,img_channel=3, num_classes=3, embedding_size=128, conv6_kernel=(5, 5),training = True,pre_trained = None):
+    def __init__(
+        self,
+        model_type: str = "MiniFASNetV2",
+        img_channel: int = 3,
+        num_classes: int = 3,
+        embedding_size: int = 128,
+        conv6_kernel: tuple = (5, 5),
+        training: bool = True,
+        pre_trained: str = None,
+    ):
         super(MultiFTNet, self).__init__()
         self.training = training
         self.img_channel = img_channel
         self.num_classes = num_classes
-        self.model = model_type(embedding_size=embedding_size, conv6_kernel=conv6_kernel,
-                                      num_classes=num_classes, img_channel=img_channel)
+        self.model = MODEL_MAPPING[model_type](
+            embedding_size=embedding_size,
+            conv6_kernel=conv6_kernel,
+            num_classes=num_classes,
+            img_channel=img_channel,
+        )
         self.FTGenerator = FTGenerator(in_channels=128)
-        self._initialize_weights()
 
-        if pre_trained is not None:
-            state_dict = torch.load(pre_trained)
+        if pre_trained:
+            print(f"file checkpoint: {os.path.basename(pre_trained)}")
+            state_dict = torch.load(pre_trained,map_location=torch.device('cpu'))
             keys = iter(state_dict)
             first_layer_name = keys.__next__()
             if first_layer_name.find("module.") >= 0:
@@ -54,12 +73,14 @@ class MultiFTNet(nn.Module):
                     name_key = key[7:]
                     new_state_dict[name_key] = value
                 self.model.load_state_dict(new_state_dict)
-            
+            print("Load checkpoint successful")
+        else:
+            self._initialize_weights()
 
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, (nn.BatchNorm2d, nn.BatchNorm1d, nn.GroupNorm)):
@@ -87,21 +108,29 @@ class MultiFTNet(nn.Module):
         x1 = self.model.drop(x1)
         cls = self.model.prob(x1)
 
-        if self.training is True:
+        if self.training:
             ft = self.FTGenerator(x)
             return cls, ft
         else:
             return cls
 
+
 if __name__ == "__main__":
     import torch
-    
+
     def get_kernel(height, width):
         kernel_size = ((height + 15) // 16, (width + 15) // 16)
         return kernel_size
-    ckpt = '/home/ai/challenge/Silent-Face-Anti-Spoofing/resources/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth'
-    model = MultiFTNet(img_channel=3,conv6_kernel=get_kernel(80,80),num_classes=3,training=False,pre_trained=ckpt)
+
+    model = MultiFTNet(
+        model_type="MiniFASNetV2",
+        img_channel=3,
+        conv6_kernel=get_kernel(80, 80),
+        num_classes=3,
+        training=False,
+        pre_trained="G:/zalo_challenge/liveness_face/Silent-Face-Anti-Spoofing/resources/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth",
+    )
     model = torch.nn.DataParallel(model).cuda()
-    img = torch.randn((4,3,80,80)).cuda()
+    img = torch.randn((4, 3, 80, 80)).cuda()
     out = model(img)
     print(out)
