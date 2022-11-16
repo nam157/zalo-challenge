@@ -100,8 +100,8 @@ def train(num_classes, img_channel, embedding_size, conv6_kernel, epochs, device
             log_val_loss = sum(total_val_loss)/len(total_val_loss)
             print('Val loss: {}'.format(log_val_loss.item()))
 
-        torch.save(model, 'logs/model_epoch_{}.pth')
-        torch.save(optimizer, 'logs/optimizer_epoch_{}.pth')
+        torch.save(model, 'logs/model_epoch_{}.pth', e)
+        torch.save(optimizer, 'logs/optimizer_epoch_{}.pth', e)
 
         scheduler.step()
 
