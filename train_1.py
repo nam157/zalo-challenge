@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 
-from data import Dataset
+from data import ContestDataset, CelebADataset
 from model import MultiFTNet
 from transform import transformer
 
@@ -29,33 +29,45 @@ def train(num_classes, img_channel, embedding_size, conv6_kernel, epochs, device
     optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10000, eta_min=1e-7)
 
-    labels = open(
-        "/home/ai/challenge/darf-nam/zalo-challenge/datasets/img_crops/scale_1/file_label.txt",
-        "r",
-    )
-    data_labels = labels.readlines()
-    label_train, label_val = train_test_split(
-        data_labels, test_size=0.2, random_state=1
-    )
+    # labels = open(
+    #     "/home/ai/challenge/darf-nam/zalo-challenge/datasets/img_crops/scale_1/file_label.txt",
+    #     "r",
+    # )
+    # data_labels = labels.readlines()
+    # label_train, label_val = train_test_split(
+    #     data_labels, test_size=0.2, random_state=1
+    # )
+    # kernel_size = get_kernel(128, 128)
+    # ft_h, ft_w = 2 * kernel_size[0], 2 * kernel_size[1]
+    # train_dataset = ContestDataset(
+    #     label_list=label_train,
+    #     transforms=transformer["train"],
+    #     ft_height=ft_h,
+    #     ft_width=ft_w,
+    # )
+
+    # test_dataset = ContestDataset(
+    #     label_list=label_val,
+    #     transforms=transformer['test'],
+    #     ft_height=ft_h,
+    #     ft_width=ft_w,
+    # )
     kernel_size = get_kernel(128, 128)
     ft_h, ft_w = 2 * kernel_size[0], 2 * kernel_size[1]
-    data = Dataset(
-        label_list=label_train,
-        transforms=transformer["train"],
+    dataset = CelebADataset(
+        '/home/ai/datasets/CelebA_Spoof',
+        'metas/intra_test/test_label.txt',
+        transformer['train'],
         ft_height=ft_h,
-        ft_width=ft_w,
+        ft_width=ft_w
     )
-
-    data_val = Dataset(
-        label_list=label_val,
-        transforms=transformer['test'],
-        ft_height=ft_h,
-        ft_width=ft_w,
-    )
+    train_size = int(0.8 * len(dataset))
+    test_size = len(dataset) - train_size
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
     params = {"batch_size": 64, "shuffle": True, "num_workers": 8, "pin_memory": True}
-    train_data_loader = DataLoader(data, **params)
-    val_data_loader = DataLoader(data_val, **params)
+    train_data_loader = DataLoader(train_dataset, **params)
+    val_data_loader = DataLoader(test_dataset, **params)
 
     for e in range(epochs):
         print(f'Epoch {e}')

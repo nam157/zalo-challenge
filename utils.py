@@ -711,3 +711,12 @@ def MiniFASNetV2SE(
         num_classes,
         img_channel,
     )
+
+
+def convert_bbox(bbox, real_w, real_h):
+        x = int(bbox[0]*(real_w / 224))
+        y = int(bbox[1]*(real_h / 224))
+        w = int(bbox[2]*(real_w / 224))
+        h = int(bbox[3]*(real_h / 224))
+
+        return x, y, w, h
