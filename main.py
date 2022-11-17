@@ -51,7 +51,7 @@ if __name__ == '__main__':
             label = label.to(DEVICE)
 
             pred = model(img)
-            pred = torch.nn.functional.softmax(pred)
+            pred = torch.nn.functional.softmax(pred, dim=0)
             loss = criterion(pred, label)
 
             optimizer.zero_grad()
@@ -69,7 +69,7 @@ if __name__ == '__main__':
                 label = label.to(DEVICE)
 
                 pred = model(img)
-                pred = torch.nn.functional.softmax(pred)
+                pred = torch.nn.functional.softmax(pred, dim=0)
                 loss = criterion(pred, label)
 
                 val_loss += loss.item()
