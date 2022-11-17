@@ -1,7 +1,9 @@
-import torch
 from datetime import datetime
+
+import torch
 from easydict import EasyDict
-from utils import make_if_not_exist, get_width_height, get_kernel
+
+from utils import get_kernel, get_width_height, make_if_not_exist
 
 
 def get_default_config():
@@ -45,7 +47,7 @@ def update_config(args, conf):
     w_input, h_input = get_width_height(args.patch_info)
     conf.input_size = [h_input, w_input]
     conf.kernel_size = get_kernel(h_input, w_input)
-    conf.device = torch.device('cpu')
+    conf.device = torch.device("cpu")
 
     # resize fourier image size
     conf.ft_height = 2 * conf.kernel_size[0]

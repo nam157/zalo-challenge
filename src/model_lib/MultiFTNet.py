@@ -1,13 +1,10 @@
 import os
+
 import torch
 from torch import nn
 
-from src.model_lib.MiniFASNet import (
-    MiniFASNetV1,
-    MiniFASNetV1SE,
-    MiniFASNetV2,
-    MiniFASNetV2SE,
-)
+from src.model_lib.MiniFASNet import (MiniFASNetV1, MiniFASNetV1SE,
+                                      MiniFASNetV2, MiniFASNetV2SE)
 
 MODEL_MAPPING = {
     "MiniFASNetV1": MiniFASNetV1,
@@ -62,7 +59,7 @@ class MultiFTNet(nn.Module):
 
         if pre_trained:
             print(f"file checkpoint: {os.path.basename(pre_trained)}")
-            state_dict = torch.load(pre_trained,map_location=torch.device('cpu'))
+            state_dict = torch.load(pre_trained, map_location=torch.device("cpu"))
             keys = iter(state_dict)
             first_layer_name = keys.__next__()
             if first_layer_name.find("module.") >= 0:

@@ -1,12 +1,12 @@
 import torch
 from torch import optim
 from torch.nn import CrossEntropyLoss, MSELoss
-from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
-from utils import get_time
-from src.model_lib.MultiFTNet import MultiFTNet
 from data.data_loader import get_train_loader
+from src.model_lib.MultiFTNet import MultiFTNet
+from utils import get_time
 
 
 class TrainMain:
@@ -86,10 +86,17 @@ class TrainMain:
                     running_loss_cls = 0.0
                     running_loss_ft = 0.0
                 if self.step % self.save_every == 0 and self.step != 0:
-                    torch.save(self.model.state_dict(),self.conf.model_path+f'/{80}x{80}_{self.conf.model_type}_{e}.pth')
+                    torch.save(
+                        self.model.state_dict(),
+                        self.conf.model_path
+                        + f"/{80}x{80}_{self.conf.model_type}_{e}.pth",
+                    )
             self.schedule_lr.step()
 
-        torch.save(self.model.state_dict(),self.conf.model_path+f'/{80}x{80}_{self.conf.model_type}_{e}.pth')
+        torch.save(
+            self.model.state_dict(),
+            self.conf.model_path + f"/{80}x{80}_{self.conf.model_type}_{e}.pth",
+        )
         self.writer.close()
 
     def _train_batch_data(self, imgs, labels):
@@ -134,5 +141,3 @@ class TrainMain:
             correct_k = correct[:k].view(-1).float().sum(dim=0, keepdim=True)
             ret.append(correct_k.mul_(1.0 / batch_size))
         return ret
-
-   

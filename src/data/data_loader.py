@@ -1,6 +1,7 @@
 from torch.utils.data import DataLoader
-from src.data.load_data import Dataset
 from torchvision import transforms as trans
+
+from src.data.load_data import Dataset
 
 
 def get_train_loader(conf):
