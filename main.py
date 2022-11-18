@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 from tqdm import tqdm
 from models import MobileNet
 
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold
 
 from load_data import CelebADataset
 
@@ -20,7 +20,7 @@ FOLD = 8
 
 if __name__ == '__main__':
     dataset = CelebADataset(
-        '/home/eco0930_huydl/Desktop/zalo/CelebA_Spoof',
+        '/home/ai/datasets/CelebA_Spoof',
         'metas/intra_test/train_label.txt'
     )
     # train_size = int(0.8 * len(dataset))
@@ -30,13 +30,13 @@ if __name__ == '__main__':
     # train_data_loader = DataLoader(data_train, batch_size=32, shuffle=True, num_workers=8, pin_memory=True)
     # val_data_loader = DataLoader(data_val, batch_size=32, shuffle=True, num_workers=8, pin_memory=True)
 
-    kfold = StratifiedKFold(n_splits=FOLD, shuffle=True, random_state=42)
+    kfold = KFold(n_splits=FOLD, shuffle=True, random_state=42)
     for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
         data_train = SubsetRandomSampler(train_ids)
         data_val = SubsetRandomSampler(test_ids)
 
-        train_data_loader = DataLoader(dataset, batch_size=64, sampler=data_train)
-        val_data_loader = DataLoader(dataset, batch_size=64, sampler=data_val)
+        train_data_loader = DataLoader(dataset, batch_size=128, num_workers=8, sampler=data_train)
+        val_data_loader = DataLoader(dataset, batch_size=128, num_workers=8, sampler=data_val)
 
 
     model = MobileNet().to(DEVICE)
