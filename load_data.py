@@ -13,8 +13,8 @@ train_transform = trans.Compose([
         trans.RandomHorizontalFlip(0.1),
         trans.RandomVerticalFlip(0.1),
         trans.ToTensor(),
-        trans.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))]
-)
+        trans.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+])
 test_transform = trans.Compose([
     trans.ToTensor(), 
     trans.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
