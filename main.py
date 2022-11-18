@@ -54,6 +54,8 @@ if __name__ == '__main__':
     # model = MobileNet()
     model = mobilevit_s((224, 224), 2)
     model = model.to(DEVICE)
+    # ckpt = torch.load("ckpt_vit_zalo/mobilenet_epoch_0_trainloss_0.686883_validloss_0.685381.pth", map_location=DEVICE)
+    # model.load_state_dict(ckpt)
 
     # optimizer = torch.optim.SGD(
     #     model.parameters(),
@@ -71,8 +73,7 @@ if __name__ == '__main__':
     criterion = CrossEntropyLoss()
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5000, eta_min=1e-8)
 
-    save_ckpt_dir = "ckpt_vit_zalo/"
-    os.makedirs(save_ckpt_dir, exist_ok=True)
+    os.makedirs(config["save_ckpt_dir"], exist_ok=True)
     
     f1 = F1Score(num_classes=2).to(DEVICE)
     confmatrix = ConfusionMatrix(num_classes=2).to(DEVICE)

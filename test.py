@@ -11,7 +11,6 @@ from load_data import test_transform
 torch.backends.cudnn.benchmark = True
 torch.manual_seed(42)
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-CKPT = 'ckpt/'
 
 
 if __name__ == '__main__':
