@@ -15,8 +15,9 @@ from models import MobileNet, mobilevit_s
 
 
 torch.backends.cudnn.benchmark = True
-DEVICE =  torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
-config = yaml.safe_load('config.yaml')
+DEVICE =  torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+with open('config.yaml', 'r') as f:
+    config = yaml.safe_load(f)
 torch.manual_seed(config["random_state"])
 
 wandb.init(
@@ -50,8 +51,9 @@ if __name__ == '__main__':
         val_data_loader = DataLoader(dataset, batch_size=config['batch_size'], num_workers=config['num_workers'], sampler=data_val)
 
 
-    # model = MobileNet().to(DEVICE)
-    model = mobilevit_s((224, 224), 2).to(DEVICE)
+    # model = MobileNet()
+    model = mobilevit_s((224, 224), 2)
+    model = model.to(DEVICE)
 
     # optimizer = torch.optim.SGD(
     #     model.parameters(),
@@ -67,7 +69,7 @@ if __name__ == '__main__':
     )
 
     criterion = CrossEntropyLoss()
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5000, eta_min=1e-8)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=3000, eta_min=1e-8)
 
     save_ckpt_dir = "ckpt_vit_zalo/"
     os.makedirs(save_ckpt_dir, exist_ok=True)
@@ -76,7 +78,7 @@ if __name__ == '__main__':
     confmatrix = ConfusionMatrix(num_classes=2).to(DEVICE)
 
     for epoch in range(config['epochs']):
-        print('EPOCH {}/{}',format(epoch+1, config['epochs']))
+        print('EPOCH {}/{}'.format(epoch+1, config['epochs']))
 
         model.train()
         total_pred = torch.Tensor().to(DEVICE)
@@ -152,11 +154,18 @@ if __name__ == '__main__':
             'val_acc': val_acc,
             'val_f1': val_f1
         })
+        wandb.log({
+            "valid_confusion_matrix": wandb.plot.confusion_matrix(
+                probs=None,
+                y_true=total_label.detach().cpu().numpy(), 
+                preds=total_pred.detach().cpu().numpy(),
+                class_names=['fake', 'real'])}
+        )
 
         scheduler.step()
 
         torch.save(
-            model,
+            model.state_dict(),
             os.path.join(save_ckpt_dir, 'mobilenet_epoch_{}_trainloss_{:.6f}_validloss_{:.6f}.pth'.format(
                 epoch, train_loss, val_loss
             )),

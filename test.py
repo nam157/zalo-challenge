@@ -1,13 +1,12 @@
+import os, glob
 from tqdm import tqdm
+import pandas as pd
+import cv2
 
 import torch
-from torch.nn import CrossEntropyLoss
-from torch.utils.data import DataLoader
-from torchmetrics import ConfusionMatrix, F1Score
 
-from load_data import CelebADataset
-from models import MobileNet
-
+from models import MobileNet, mobilevit_s
+from load_data import test_transform
 
 torch.backends.cudnn.benchmark = True
 torch.manual_seed(42)
@@ -16,46 +15,40 @@ CKPT = 'ckpt/'
 
 
 if __name__ == '__main__':
-    dataset = CelebADataset(
-        '/home/ai/datasets/CelebA_Spoof',
-        'metas/intra_test/test_label.txt'
-    )
-    test_data_loader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=8, pin_memory=True)
+    # model = MobileNet()
+    model = mobilevit_s((224, 224), 2)
+    model = model.to(DEVICE)
+    ckpt = torch.load("ckpt_vit_zalo/mobilenet_epoch_0_trainloss_0.686883_validloss_0.685381.pth", map_location=DEVICE)
+    model.load_state_dict(ckpt)
 
-    model = MobileNet().to(DEVICE)
-    model.load_state_dict(torch.load(CKPT, map_location=DEVICE))
+    videos = glob.glob("/home/ai/datasets/challenge/liveness/test/public_test_2/videos/*.mp4")
+    submit = {}
+    # for video in tqdm(videos):
+    for video in videos:
+        result = torch.zeros(2, device=DEVICE)
+        counter = 0
+        vidcap = cv2.VideoCapture(video)
+        success, image = vidcap.read()
+        while success:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            image = test_transform(image)
+            image = image.unsqueeze(0)
+            image = image.to(DEVICE)
 
-    criterion = CrossEntropyLoss()
-    f1 = F1Score(num_classes=2).to(DEVICE)
-    confmatrix = ConfusionMatrix(num_classes=2).to(DEVICE)
+            pred = model(image)
+            pred = torch.nn.functional.softmax(pred, dim=1)
+            pred = pred.squeeze(0)
 
-    with torch.no_grad():
-        total_pred = torch.Tensor().to(DEVICE)
-        total_label = torch.Tensor().to(DEVICE)
-        test_loss = 0
+            result = result + pred
+            
+            success, image = vidcap.read()
+            counter += 1
 
-        for img, label in tqdm(test_data_loader, desc="Testing"):
-            img = img.to(DEVICE)
-            label = label.to(DEVICE)
-            label_argmax = torch.argmax(label, dim=1)
-
-            pred = model(img)
-            pred = torch.nn.functional.softmax(pred, dim=0)
-            pred_argmax = torch.argmax(pred, dim=1)
-            # pred_label = torch.zeros_like(pred).scatter_(1, pred_argmax.unsqueeze(1), 1.)
-
-            loss = criterion(pred, label)
-
-            total_pred = torch.cat((total_pred.to(torch.int8), pred_argmax.to(torch.int8)))
-            total_label = torch.cat((total_label.to(torch.int8), label_argmax.to(torch.int8)))
-
-            test_loss += loss.item()
-
-        test_loss = test_loss / len(test_loss)
-        test_acc = sum(total_label == total_label) / len(total_label)
-        test_f1 = f1(total_pred, total_label)
-        test_cfmatrix = confmatrix(total_pred, total_label)
-
-    print('Test loss {:.6f} Acc {:.3f} F1 {:.3f}'.format(test_loss, test_acc, test_f1))
-    print('Test confusion matrix:')
-    print(test_cfmatrix)
+        
+        result = result / counter
+        pos = torch.argmax(result, dim=0)
+        ans = 1 - result[pos] if pos == 0 else result[pos]
+        submit[os.path.basename(video)] = ans.item()
+        break
+    csv_file = pd.DataFrame(submit.items(), columns=['Date', 'DateValue'])
+    csv_file = csv_file.to_csv('submit.csv')

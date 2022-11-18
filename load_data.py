@@ -16,7 +16,8 @@ train_transform = trans.Compose([
         trans.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
 ])
 test_transform = trans.Compose([
-    trans.ToTensor(), 
+    trans.ToTensor(),
+    trans.RandomResizedCrop(size=(224, 224), scale=(0.9, 1.1)),
     trans.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
 ])
 transformer = {"train": train_transform, "test": test_transform}
