@@ -22,6 +22,37 @@ test_transform = trans.Compose([
 transformer = {"train": train_transform, "test": test_transform}
 
 
+class ZaloDataset(Dataset):
+    def __init__(self, image_path, label_path, transforms=transformer['train']):
+        self.image_path = image_path
+        self.label_path = label_path
+        self.transforms = transforms
+
+        self._load_data()
+
+    def _load_data(self):
+        with open(self.label_path, 'r') as f:
+            label = f.readlines()
+            label = [each.replace('\n', '') for each in label]
+            label = [(each.split()[0], each.split()[-1]) for each in label]
+
+        self.path_and_label = label
+    
+    def __len__(self):
+        return len(self.path_and_label)
+
+    def __getitem__(self, index):
+        path, label = self.path_and_label[index]
+        path = os.path.join(self.image_path, os.path.basename(path))
+        img = Image.open(path).convert('RGB')
+
+        if self.transforms:
+            img = self.transforms(img)
+    
+        label = torch.FloatTensor([1, 0] if label == '0' else [0, 1])
+
+        return img, label
+
 class CelebADataset(Dataset):
     def __init__(self, base_dir, label_path, transforms=transformer['train']):
         self.base_dir = base_dir
@@ -51,8 +82,16 @@ class CelebADataset(Dataset):
 
 
 if __name__ == '__main__':
-    dataset = CelebADataset(
-        '/home/eco0930_huydl/Desktop/zalo/CelebA_Spoof',
-        'metas/intra_test/train_label.txt',
-        transformer['train'],
+    # dataset = CelebADataset(
+    #     '/home/eco0930_huydl/Desktop/zalo/CelebA_Spoof',
+    #     'metas/intra_test/train_label.txt',
+    #     transformer['train'],
+    # )
+
+    dataset = ZaloDataset(
+        image_path='/home/ai/datasets/challenge/liveness/generate/zalo_train',
+        label_path='/home/ai/datasets/challenge/liveness/generate/zalo_train/face_crops.txt',
+        transforms=transformer['train']
     )
+    
+    print(dataset[0])
