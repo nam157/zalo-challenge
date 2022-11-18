@@ -69,7 +69,7 @@ if __name__ == '__main__':
     )
 
     criterion = CrossEntropyLoss()
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=3000, eta_min=1e-8)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5000, eta_min=1e-8)
 
     save_ckpt_dir = "ckpt_vit_zalo/"
     os.makedirs(save_ckpt_dir, exist_ok=True)

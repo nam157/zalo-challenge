@@ -49,6 +49,6 @@ if __name__ == '__main__':
         pos = torch.argmax(result, dim=0)
         ans = 1 - result[pos] if pos == 0 else result[pos]
         submit[os.path.basename(video)] = ans.item()
-        break
-    csv_file = pd.DataFrame(submit.items(), columns=['Date', 'DateValue'])
+
+    csv_file = pd.DataFrame(submit.items(), columns=['fname', 'liveness_score'])
     csv_file = csv_file.to_csv('submit.csv')
