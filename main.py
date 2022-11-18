@@ -91,7 +91,7 @@ if __name__ == '__main__':
         train_f1 = f1(total_pred.to(torch.int8), total_label.to(torch.int8))
         train_cfmatrix = confmatrix(total_pred.to(torch.int8), total_label.to(torch.int8))
 
-        print('Train loss {:.6f} Acc: {:.3f} F1 {:.3f}',format(train_loss, train_acc, train_f1))
+        print('Train loss {:.6f} Acc: {:.3f} F1 {:.3f}'.format(train_loss, train_acc, train_f1))
         print('Train confusion matrix:')
         print(train_cfmatrix)
 
