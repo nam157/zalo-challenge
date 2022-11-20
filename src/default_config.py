@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time : 20-6-4 上午9:12
-# @Author : zhuying
-# @Company : Minivision
-# @File : default_config.py
-# @Software : PyCharm
-# --*-- coding: utf-8 --*--
 """
 default config for training
 """
@@ -20,27 +13,27 @@ from src.utility import get_kernel, get_width_height, make_if_not_exist
 def get_default_config():
     conf = EasyDict()
     conf.model_type = "MiniFASNetV2"
-    conf.pre_trained = "/home/ai/challenge/Silent-Face-Anti-Spoofing/resources/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth"
-    conf.label_list = "/home/ai/challenge/datasets/crops_80x80/scale_1.0/file_list.txt"
+    conf.pre_trained = None #"./resources/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth"
+
     # ----------------------training---------------
+    conf.schedule_type = "CosineAnnealingLR"
     conf.lr = 1e-3
     # [9, 13, 15]
     conf.milestones = [5, 10, 19, 25]  # down learing rate
     conf.gamma = 0.1
     conf.epochs = 300
     conf.momentum = 0.9
-    conf.batch_size = 32
+    conf.batch_size = 16
 
     # model
-    conf.num_classes = 3
+    conf.num_classes = 2
     conf.input_channel = 3
     conf.embedding_size = 128
 
     # dataset
-    conf.train_root_path = "./datasets/rgb_image"
-
+    conf.label_list = "G:/zalo_challenge/liveness_face/antispoofing_zalo/datasets/images_train/datasets/images/file_label.txt"
     # save file path
-    conf.snapshot_dir_path = "./saved_logs/ckpt/test/"
+    conf.snapshot_dir_path = "./saved_logs/ckpt/"
 
     # log path
     conf.log_path = "./saved_logs/jobs"

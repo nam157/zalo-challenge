@@ -8,8 +8,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from src.model_lib.MiniFASNet import (MiniFASNetV1, MiniFASNetV1SE,
-                                      MiniFASNetV2, MiniFASNetV2SE)
+from src.model_lib.MiniFASNet import (
+    MiniFASNetV1,
+    MiniFASNetV1SE,
+    MiniFASNetV2,
+    MiniFASNetV2SE,
+)
 
 
 class FTGenerator(nn.Module):
@@ -56,7 +60,7 @@ class MultiFTNet(nn.Module):
         self.FTGenerator = FTGenerator(in_channels=128)
 
         if pre_trained is not None:
-            state_dict = torch.load(pre_trained)
+            state_dict = torch.load(pre_trained,map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
             keys = iter(state_dict)
             first_layer_name = keys.__next__()
             if first_layer_name.find("module.") >= 0:

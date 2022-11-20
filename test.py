@@ -73,12 +73,14 @@ def test(image_name, model_dir, device_id):
 
 
 def main(arg):
-
-    cap = cv2.VideoCapture((arg.image_name))
+    cap = cv2.VideoCapture(arg.path)
     while cap.isOpened():
         ret, frame = cap.read()
         test(frame, args.model_dir, args.device_id)
-
+        cv2.imshow("video",frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     desc = "test"
@@ -89,11 +91,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_dir",
         type=str,
-        default="/home/ai/challenge/Silent-Face-Anti-Spoofing/resources/test_2/",
+        default="./resources/test_2/",
         help="model_lib used to test",
     )
     parser.add_argument(
-        "--image_name", type=str, default="image_F2.jpg", help="image used to test"
+        "--path", type=int, help="image used to test"
     )
     args = parser.parse_args()
     main(args)

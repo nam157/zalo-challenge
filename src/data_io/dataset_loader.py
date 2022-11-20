@@ -5,7 +5,7 @@ from torchvision import transforms as tortrans
 from src.data_io import transform as trans
 from src.data_io.dataset_folder import Dataset
 
-labels = open("/home/ai/challenge/datasets/crops_80x80/scale_2.7/file_list.txt", "r")
+labels = open("G:/zalo_challenge/liveness_face/antispoofing_zalo/datasets/images_train/datasets/images/file_label.txt", "r")
 data_label = labels.readlines()
 
 train_label, val_label = train_test_split(data_label, test_size=0.2, random_state=111)

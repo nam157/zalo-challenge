@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time : 20-6-4 下午2:13
-# @Author : zhuying
-# @Company : Minivision
-# @File : utility.py
-# @Software : PyCharm
-
 import os
 from datetime import datetime
 

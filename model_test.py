@@ -7,8 +7,12 @@ import torch
 import torch.nn.functional as F
 
 from src.data_io import transform as trans
-from src.model_lib.MiniFASNet import (MiniFASNetV1, MiniFASNetV1SE,
-                                      MiniFASNetV2, MiniFASNetV2SE)
+from src.model_lib.MiniFASNet import (
+    MiniFASNetV1,
+    MiniFASNetV1SE,
+    MiniFASNetV2,
+    MiniFASNetV2SE,
+)
 from src.model_lib.MultiFTNet import MultiFTNet
 from src.utility import get_kernel, parse_model_name
 

@@ -70,7 +70,7 @@ def main(arg):
                 # if c % 5 == 0:
                 score = test(frame, args.model_dir, args.device_id)
                 ls.append(score)
-                # c +=1   
+                # c +=1
             except:
                 break
         print(ls)

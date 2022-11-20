@@ -122,7 +122,7 @@ class Dataset:
         for file in label_lists:  # open(label_lists, "r"):
             file_info = file.strip("\n").split(" ")
             file_name = file_info[0]
-            label = file_info[1]
+            label = file_info[-1]
             file_list.append(file_name)
             label_list.append(int(label))
         return file_list, label_list

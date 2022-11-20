@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time : 20-6-9 上午10:20
-# @Author : zhuying
-# @Company : Minivision
-# @File : anti_spoof_predict.py
-# @Software : PyCharm
-
 import math
 import os
 
@@ -14,8 +7,12 @@ import torch
 import torch.nn.functional as F
 
 from src.data_io import transform as trans
-from src.model_lib.MiniFASNet import (MiniFASNetV1, MiniFASNetV1SE,
-                                      MiniFASNetV2, MiniFASNetV2SE)
+from src.model_lib.MiniFASNet import (
+    MiniFASNetV1,
+    MiniFASNetV1SE,
+    MiniFASNetV2,
+    MiniFASNetV2SE,
+)
 from src.utility import get_kernel, parse_model_name
 
 MODEL_MAPPING = {

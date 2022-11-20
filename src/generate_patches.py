@@ -1,15 +1,11 @@
-# -*- coding: utf-8 -*-
-# @Time : 20-6-9 下午3:06
-# @Author : zhuying
-# @Company : Minivision
-# @File : test.py
-# @Software : PyCharm
+# @copy: Minivision_AI
 """
 Create patch from original input image by using bbox coordinate
 """
-
+import os
 import cv2
 import numpy as np
+
 
 
 class CropImage:
@@ -69,3 +65,38 @@ class CropImage:
             ]
             dst_img = cv2.resize(img, (out_w, out_h))
         return dst_img
+
+def process_zalo(db_dir, save_dir, scale, crop_sz):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    file_list = open(save_dir + "/file_list.txt", "w")
+    for file in open(db_dir + "/file_label.txt", "r"):
+        file_info = file.strip("\n").split(" ")
+        file_name = file_info[0]
+        bboxs = file_info[1:5]
+        bboxs = [int(bboxs[0]), int(bboxs[1]), int(bboxs[2]), int(bboxs[3])]
+        label = file_info[5]
+        cur_save_dir = os.path.join(save_dir, *file_name.split("/")[-4:-1])
+
+        if not os.path.exists(cur_save_dir):
+            os.makedirs(cur_save_dir)
+
+        frame = cv2.imread(file_name)
+        croper = CropImage()
+        croped = croper.crop(
+            frame, bbox=bboxs, scale=scale, out_w=crop_sz, out_h=crop_sz, crop=True
+        )
+        print(croped)
+        save_fname = os.path.join(cur_save_dir, file_name.split("/")[-1])
+        file_list.writelines("%s %s\n" % (save_fname, label))
+        cv2.imwrite(save_fname, croped, [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+
+if __name__ == "__main__":
+    db_dir = "G:/zalo_challenge/liveness_face/antispoofing_zalo/datasets/images_train/datasets/images/"
+    save_dir = "F:/zalo-challenge/datasets/"
+    scales = [1.0, 4.0]
+    crop_sz = 80
+    for scale in scales:
+        cur_save_dir = save_dir + "/scale_" + str(scale)
+        process_zalo(db_dir, cur_save_dir, scale, crop_sz)
