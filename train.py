@@ -1,87 +1,33 @@
+import argparse
 import os
-import warnings
 
-import torch
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-from torch import nn
-from torch.nn import functional as F
-from torch.utils import data
-
-import utils
-from load_data import Data
-from models.net import Net
-
-warnings.filterwarnings("ignore")
+from src.default_config import get_default_config, update_config
+from src.train_main import TrainMain
 
 
-def train(net, dataloader, optimizer, epoch):
-    net.train()
-    scores = []
-    all_y = []
-
-    for e in range(epoch):
-        for batch_idx, (X, y) in enumerate(dataloader):
-
-            X, y = X.to(device), y.to(device).view(-1,)
-            optimizer.zero_grad()
-            output = net(X)
-            scores.extend(F.softmax(output).detach().cpu().numpy()[:, 1:])
-            all_y.extend(y.cpu().numpy())
-            loss = F.cross_entropy(output, y)
-            loss.backward()
-            optimizer.step()
-
-        if e % 5 == 0:
-            print("the loss is", loss.item())
-            torch.save(net, f"ckpt/model_scale_{2.7}.pth")
-            val(net, test_data_loader, e)
-
-
-def val(net, dataloader, e):
-    net.eval()
-    scores = []
-    all_y = []
-    for batch_idx, (X, y) in enumerate(dataloader):
-
-        X, y = X.to(device), y.to(device).view(-1,)
-        optimizer.zero_grad()
-        output = net(X)
-        scores.extend(F.softmax(output).detach().cpu().numpy()[:, 1:])
-        all_y.extend(y.cpu().numpy())
-
-    print("epoch %d " % (e))
-    utils.EER(all_y, scores)
-    utils.HTER(all_y, scores, 0.5)
+def parse_args():
+    """parsing and configuration"""
+    desc = "Silence-FAS"
+    parser = argparse.ArgumentParser(description=desc)
+    parser.add_argument(
+        "--device_ids", type=str, default="1", help="which gpu id, 0123"
+    )
+    parser.add_argument(
+        "--patch_info",
+        type=str,
+        default="2.7_80x80",
+        help="[org_1_80x60 / 1_80x80 / 2.7_80x80 / 4_80x80]",
+    )
+    args = parser.parse_args()
+    cuda_devices = [int(elem) for elem in args.device_ids]
+    os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, cuda_devices))
+    args.devices = [x for x in range(len(cuda_devices))]
+    return args
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-    # Detect devices
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")  # use CPU or GPU
-    learning_rate = 0.01
-
-    params = (
-        {"batch_size": 8, "shuffle": True, "num_workers": 0, "pin_memory": True}
-        if use_cuda
-        else {}
-    )
-    if use_cuda:
-        net = Net(2).to(device)
-    if torch.cuda.device_count() > 1:
-        print("Using", torch.cuda.device_count(), "GPUs!")
-        model = nn.DataParallel(net)
-
-    dataset = Data(
-        "G:/zalo_challenge/liveness_face/antispoofing_zalo/datasets/crops/scale_2.7/",
-        True,
-    )
-    train_data_set, valid_data_set = train_test_split(
-        dataset, test_size=0.2, random_state=1
-    )
-    train_data_loader = data.DataLoader(train_data_set, **params)
-    test_data_loader = data.DataLoader(valid_data_set, **params)
-    optimizer = torch.optim.SGD(list(net.parameters()), lr=learning_rate)
-
-    train(net, dataloader=train_data_loader, optimizer=optimizer, epoch=100)
+    args = parse_args()
+    conf = get_default_config()
+    conf = update_config(args, conf)
+    trainer = TrainMain(conf)
+    trainer.train_model()

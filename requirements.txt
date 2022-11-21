@@ -1,7 +1,6 @@
 opencv-python
 pandas
 numpy
-facenet_pytorch
 scikit-learn
 tqdm
 matplotlib

@@ -1,3 +1,0 @@
-export PYTHONPATH=.
-black .
-isort .
