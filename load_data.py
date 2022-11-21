@@ -8,12 +8,13 @@ from torch.utils.data import Dataset
 
 
 train_transform = trans.Compose([
-        trans.RandomResizedCrop(size=(224, 224), scale=(0.9, 1.1)),
+        # trans.RandomResizedCrop(size=(224, 224), scale=(0.9, 1.1)),
         trans.RandomRotation(10),
         trans.RandomHorizontalFlip(0.1),
         trans.RandomVerticalFlip(0.1),
-        trans.ToTensor(),
-        trans.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+        trans.TenCrop(224),
+        trans.Lambda(lambda crops: torch.stack([trans.ToTensor()(crop) for crop in crops])),
+        trans.Lambda(lambda crops: torch.stack([trans.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(crop) for crop in crops]))
 ])
 test_transform = trans.Compose([
     trans.ToTensor(),

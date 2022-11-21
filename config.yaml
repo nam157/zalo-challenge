@@ -1,7 +1,7 @@
 epochs: 500
 random_state: 42
 fold: 8
-batch_size: 128
+batch_size: 16
 num_workers: 8
 lr: 1.0e-3
-save_ckpt_dir: ckpt_vit_zalo/
+save_ckpt_dir: ckpt_vit/

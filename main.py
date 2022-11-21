@@ -4,7 +4,7 @@ import yaml
 
 import torch
 from torch.nn import CrossEntropyLoss
-from torch.utils.data import DataLoader, SubsetRandomSampler
+from torch.utils.data import DataLoader, SubsetRandomSampler, ConcatDataset
 from torchmetrics import ConfusionMatrix, F1Score
 
 from sklearn.model_selection import KFold
@@ -12,6 +12,7 @@ import wandb
 
 from load_data import CelebADataset, ZaloDataset
 from models import MobileNet, mobilevit_s
+from utils import compute_eer
 
 
 torch.backends.cudnn.benchmark = True
@@ -23,11 +24,12 @@ torch.manual_seed(config["random_state"])
 wandb.init(
     project="zalo_challenge",
     config=config,
+    name='ZaloTenCrop'
 )
 
 
 if __name__ == '__main__':
-    # dataset = CelebADataset(
+    # dataset_celeb = CelebADataset(
     #     '/home/ai/datasets/CelebA_Spoof',
     #     'metas/intra_test/train_label.txt'
     # )
@@ -35,6 +37,7 @@ if __name__ == '__main__':
         image_path='/home/ai/datasets/challenge/liveness/generate/zalo_train',
         label_path='/home/ai/datasets/challenge/liveness/generate/zalo_train/face_crops.txt'
     )
+    # dataset = ConcatDataset([dataset_celeb, dataset_zalo])
     # train_size = int(0.8 * len(dataset))
     # test_size = len(dataset) - train_size
     # data_train, data_val = torch.utils.data.random_split(dataset, [train_size, test_size])
@@ -71,7 +74,7 @@ if __name__ == '__main__':
     )
 
     criterion = CrossEntropyLoss()
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5000, eta_min=1e-8)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=15000, eta_min=1e-8)
 
     os.makedirs(config["save_ckpt_dir"], exist_ok=True)
     
@@ -90,8 +93,14 @@ if __name__ == '__main__':
             label = label.to(DEVICE)
             label_argmax = torch.argmax(label, dim=1)
 
-            pred = model(img)
-            pred = torch.nn.functional.softmax(pred, dim=0)
+            bs, ncrops, c, h, w = img.size()
+            input_fit = img.view(-1, c, h, w)
+            # pred = model(img)
+            pred = model(input_fit)
+            output_avg = pred.view(bs, ncrops, -1).mean(1)
+
+            pred = torch.nn.functional.softmax(output_avg, dim=1)
+            # pred = torch.nn.functional.softmax(pred, dim=1)
             pred_argmax = torch.argmax(pred, dim=1)
             # pred_label = torch.zeros_like(pred).scatter_(1, pred_argmax.unsqueeze(1), 1.)
 
@@ -110,14 +119,16 @@ if __name__ == '__main__':
         train_acc = sum(total_label == total_label) / len(total_label)
         train_f1 = f1(total_pred.to(torch.int8), total_label.to(torch.int8))
         train_cfmatrix = confmatrix(total_pred.to(torch.int8), total_label.to(torch.int8))
+        train_eer = compute_eer(total_label.detach().cpu().numpy(), total_pred.detach().cpu().numpy())
 
-        print('Train loss {:.6f} Acc: {:.3f} F1 {:.3f}'.format(train_loss, train_acc, train_f1))
+        print('Train loss {:.6f} Acc: {:.3f} F1 {:.3f} EER {:.3f}'.format(train_loss, train_acc, train_f1, train_eer))
         print('Train confusion matrix:')
         print(train_cfmatrix)
         wandb.log({
             'train_loss': train_loss,
             'train_acc': train_acc,
-            'train_f1': train_f1
+            'train_f1': train_f1,
+            'train_eer': train_eer,
         })
 
         with torch.no_grad():
@@ -130,8 +141,14 @@ if __name__ == '__main__':
                 label = label.to(DEVICE)
                 label_argmax = torch.argmax(label, dim=1)
 
-                pred = model(img)
-                pred = torch.nn.functional.softmax(pred, dim=0)
+                bs, ncrops, c, h, w = img.size()
+                input_fit = img.view(-1, c, h, w)
+                # pred = model(img)
+                pred = model(input_fit)
+                output_avg = pred.view(bs, ncrops, -1).mean(1)
+
+                pred = torch.nn.functional.softmax(output_avg, dim=1)
+                # pred = torch.nn.functional.softmax(pred, dim=1)
                 pred_argmax = torch.argmax(pred, dim=1)
                 # pred_label = torch.zeros_like(pred).scatter_(1, pred_argmax.unsqueeze(1), 1.)
 
@@ -146,14 +163,16 @@ if __name__ == '__main__':
             val_acc = sum(total_label == total_label) / len(total_label)
             val_f1 = f1(total_pred, total_label)
             val_cfmatrix = confmatrix(total_pred, total_label)
+            val_eer = compute_eer(total_label.detach().cpu().numpy(), total_pred.detach().cpu().numpy())
 
-        print('Valid loss {:.6f} Acc {:.3f} F1 {:.3f}'.format(val_loss, val_acc, val_f1))
+        print('Valid loss {:.6f} Acc {:.3f} F1 {:.3f} EER {:.3f}'.format(val_loss, val_acc, val_f1, val_eer))
         print('Valid confusion matrix:')
         print(val_cfmatrix)
         wandb.log({
             'val_loss': val_loss,
             'val_acc': val_acc,
-            'val_f1': val_f1
+            'val_f1': val_f1,
+            'val_eer': val_eer,
         })
         wandb.log({
             "valid_confusion_matrix": wandb.plot.confusion_matrix(
@@ -167,7 +186,7 @@ if __name__ == '__main__':
 
         torch.save(
             model.state_dict(),
-            os.path.join(save_ckpt_dir, 'mobilenet_epoch_{}_trainloss_{:.6f}_validloss_{:.6f}.pth'.format(
+            os.path.join(config['save_ckpt_dir'], 'mobilenet_epoch_{}_trainloss_{:.6f}_validloss_{:.6f}.pth'.format(
                 epoch, train_loss, val_loss
             )),
         )
