@@ -14,7 +14,8 @@ data_label = labels.readlines()
 
 train_label, val_label = train_test_split(data_label, test_size=0.2, random_state=111)
 
-print(f'Train: {len(train_label)},Validation: {len(val_label)}')
+print(f"Train: {len(train_label)},Validation: {len(val_label)}")
+
 
 def get_train_loader(conf):
     train_transform = trans.Compose(

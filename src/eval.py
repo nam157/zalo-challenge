@@ -7,8 +7,8 @@ import cv2
 import numpy as np
 import pandas as pd
 
-from model_test import AntiSpoofPredict
 from src.generate_patches import CropImage
+from src.model_test import AntiSpoofPredict
 from src.utility import parse_model_name
 
 warnings.filterwarnings("ignore")
@@ -63,16 +63,13 @@ def main(arg):
         c = 0
         while cap.isOpened():
             ret, frame = cap.read()
-            score = test(frame, args.model_dir, args.device_id)
-            ls.append(score)
-            # try:
-            #     if c % 10 == 0:
-            #         score = test(frame, args.model_dir, args.device_id)
-            #         ls.append(score)
-            #     c +=1
-            # except:
-            #     break
-        print(ls)
+            try:
+                if c % 10 == 0:
+                    score = test(frame, args.model_dir, args.device_id)
+                    ls.append(score)
+                c += 1
+            except:
+                break
         target[video_name] = sum(ls) / len(ls)
     df = pd.DataFrame(list(target.items()), columns=["fname", "liveness_score"])
     df.to_csv("predict.csv", index=False, encoding="utf-8", float_format="%.10f")

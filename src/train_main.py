@@ -2,13 +2,13 @@ import os
 import warnings
 
 import torch
+import torch.nn.functional as F
 from torch import optim
 from torch.nn import CrossEntropyLoss, MSELoss
-import torch.nn.functional as F
 from tqdm import tqdm
 
-from method_evaluate import get_equal_error_rate, get_tp_fp_rates
 from src.data_io.dataset_loader import get_train_loader, get_val_loader
+from src.method_evaluate import get_equal_error_rate, get_tp_fp_rates
 from src.model_lib.MiniFASNet import (
     MiniFASNetV1,
     MiniFASNetV1SE,
@@ -64,24 +64,22 @@ class TrainMain:
         self.ft_criterion = MSELoss()
         self.model = self._define_network()
 
-        if self.conf.optimizer_type == 'sgd':
+        if self.conf.optimizer_type == "sgd":
             self.optimizer = optim.SGD(
                 self.model.module.parameters(),
                 lr=self.conf.lr,
                 weight_decay=5e-4,
                 momentum=self.conf.momentum,
             )
-        elif self.conf.optimizer_type == 'adam':
+        elif self.conf.optimizer_type == "adam":
             self.optimizer = optim.Adam(
                 self.model.module.parameters(),
                 lr=self.conf.lr,
                 amsgrad=True,
-                weight_decay=1.0e-5
+                weight_decay=1.0e-5,
             )
         else:
             self.optimizer = None
-
-        
 
         if self.conf.schedule_type == "MultiStepLR":
             self.schedule_lr = optim.lr_scheduler.MultiStepLR(
@@ -115,7 +113,14 @@ class TrainMain:
     def _train_stage(self):
         for e in range(self.start_epoch, self.conf.epochs):
             print(f"--------Epoch----------: {e}")
-            loss_train, loss_cls, loss_fea, acc, eer_train,lr = self._train_batch_data()
+            (
+                loss_train,
+                loss_cls,
+                loss_fea,
+                acc,
+                eer_train,
+                lr,
+            ) = self._train_batch_data()
             (
                 loss_val,
                 eer_val,
@@ -135,7 +140,6 @@ class TrainMain:
                     "acc-val": acc_val,
                     "eer_val": eer_val,
                     "learning-rate": lr,
-                    
                     "valid_confusion_matrix": wandb.plot.confusion_matrix(
                         probs=None,
                         y_true=total_label.detach().cpu().numpy(),
@@ -145,9 +149,14 @@ class TrainMain:
                 }
             )
 
-            torch.save(self.model.state_dict(), self.conf.model_path +'/'+self.conf.name_ckpt+f"_{e}.pth")
-            artifact = wandb.Artifact('model', type='model')
-            artifact.add_file(self.conf.model_path +'/'+self.conf.name_ckpt+f"_{e}.pth")
+            torch.save(
+                self.model.state_dict(),
+                self.conf.model_path + "/" + self.conf.name_ckpt + f"_{e}.pth",
+            )
+            artifact = wandb.Artifact("model", type="model")
+            artifact.add_file(
+                self.conf.model_path + "/" + self.conf.name_ckpt + f"_{e}.pth"
+            )
             wandb.log_artifact(artifact)
             wandb.join()
 
@@ -163,7 +172,7 @@ class TrainMain:
         loss_fea_sum = 0
         acc_sum = 0
         eer_sum = 0
-        
+
         for imgs, ft_sample, target in tqdm(iter(self.train_loader)):
             total_pred = torch.Tensor().to(self.conf.device)
             total_label = torch.Tensor().to(self.conf.device)
@@ -206,7 +215,7 @@ class TrainMain:
             loss_fea_sum / len(self.train_loader),
             acc_sum / len(self.train_loader),
             eer_sum / len(self.train_loader),
-            lr
+            lr,
         )
 
     def _valid_batch_data(self):
@@ -217,7 +226,7 @@ class TrainMain:
         total_pred = torch.Tensor().to(self.conf.device)
         total_label = torch.Tensor().to(self.conf.device)
         for imgs, _, target in tqdm(iter(self.valid_loader)):
-            
+
             with torch.no_grad():
                 target = target.to(self.conf.device)
                 embeddings = self.model.forward(imgs.to(self.conf.device))

@@ -7,8 +7,8 @@ import cv2
 import numpy as np
 import pandas as pd
 
-from model_test import AntiSpoofPredict
 from src.generate_patches import CropImage
+from src.model_test import AntiSpoofPredict
 from src.utility import parse_model_name
 
 warnings.filterwarnings("ignore")
@@ -49,37 +49,15 @@ def test(image_name, model_dir, device_id):
     value = prediction[0][label]
     if label == 1:
         print("Image is Real Face. Score: {:.2f}.".format(value))
-        result_text = "RealFace Score: {:.2f}".format(value)
         color = (255, 0, 0)
         return value
     else:
         print("Image is Fake Face. Score: {:.2f}.".format(1 - value))
-        result_text = "FakeFace Score: {:.2f}".format(value)
         color = (0, 0, 255)
-        return 1-value
-    print("Prediction cost {:.2f} s".format(test_speed))
-    cv2.rectangle(
-        image,
-        (image_bbox[0], image_bbox[1]),
-        (image_bbox[0] + image_bbox[2], image_bbox[1] + image_bbox[3]),
-        color,
-        2,
-    )
-    cv2.putText(
-        image,
-        result_text,
-        (image_bbox[0], image_bbox[1] - 5),
-        cv2.FONT_HERSHEY_COMPLEX,
-        0.5 * image.shape[0] / 1024,
-        color,
-    )
+        return 1 - value
 
 
 def main(arg):
-    # cap = cv2.VideoCapture(arg.path)
-    # while cap.isOpened():
-    #     ret, frame = cap.read()
-    #     test(frame, args.model_dir, args.device_id)
     target = {}
     for video_name in os.listdir(args.image_name):
         print("Processing video: " + video_name)
@@ -93,7 +71,7 @@ def main(arg):
                 if c % 10 == 0:
                     score = test(frame, args.model_dir, args.device_id)
                     ls.append(score)
-                c +=1
+                c += 1
             except:
                 break
         print(ls)

@@ -20,7 +20,7 @@ def get_default_config():
     conf.schedule_type = "CosineAnnealingLR"
     conf.lr = 1e-4
     # [9, 13, 15]
-    conf.milestones = [9,15,20]  # down learing rate
+    conf.milestones = [9, 15, 20]  # down learing rate
     conf.gamma = 0.1
     conf.epochs = 300
     conf.momentum = 0.9
@@ -32,7 +32,7 @@ def get_default_config():
     conf.embedding_size = 128
 
     # dataset
-    conf.label_list = '/home/ai/challenge/datasets/images/file_label.txt'
+    conf.label_list = "/home/ai/challenge/datasets/images/file_label.txt"
     # save file path
     conf.snapshot_dir_path = "./saved_logs/ckpt/"
 
@@ -52,7 +52,7 @@ def update_config(args, conf):
     w_input, h_input = get_width_height(args.patch_info)
     conf.input_size = [h_input, w_input]
     conf.kernel_size = get_kernel(h_input, w_input)
-    conf.device = torch.device('cuda')
+    conf.device = torch.device("cuda")
 
     # resize fourier image size
     conf.ft_height = 2 * conf.kernel_size[0]

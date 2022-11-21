@@ -1,12 +1,13 @@
-import glob, os
+import glob
+import os
+import warnings
+
 import cv2
 import pandas as pd
+import torch
+from facenet_pytorch import MTCNN
 from tqdm import tqdm
 
-from facenet_pytorch import MTCNN
-import torch
-
-import warnings
 warnings.filterwarnings("ignore")
 
 data_folders = [
@@ -16,8 +17,8 @@ save_dir = "/home/ai/datasets/challenge/liveness/generate/"
 os.makedirs(save_dir, exist_ok=True)
 
 SKIP_FRAME = 3
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = MTCNN(device='cuda' if torch.cuda.is_available() else 'cpu')
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = MTCNN(device="cuda" if torch.cuda.is_available() else "cpu")
 
 
 for idx_folder, data_dir in enumerate(data_folders):
@@ -26,23 +27,25 @@ for idx_folder, data_dir in enumerate(data_folders):
     os.makedirs(save_images_dir, exist_ok=True)
     face_file = open(os.path.join(save_images_dir, "face_crops.txt"), "a")
 
-    for file in tqdm(videos, desc="Process {}/{}".format(idx_folder+1, len(data_folders))):
+    for file in tqdm(
+        videos, desc="Process {}/{}".format(idx_folder + 1, len(data_folders))
+    ):
         vidcap = cv2.VideoCapture(file)
         success, frame = vidcap.read()
-        
+
         count = 0
         frame_num = 0
         while success:
-            torch_frame = torch.from_numpy(
-                cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            ).to(DEVICE)
-            
+            torch_frame = torch.from_numpy(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).to(
+                DEVICE
+            )
+
             detect_res = model.detect(torch_frame)
             if len(detect_res) > 0 and count % SKIP_FRAME == 0:
                 file_name = os.path.join(
                     save_dir,
                     str(idx_folder),
-                    f"{os.path.basename(file)[:-4]}_frame_{frame_num}.jpg"
+                    f"{os.path.basename(file)[:-4]}_frame_{frame_num}.jpg",
                 )
                 bbox = detect_res[0]
 
