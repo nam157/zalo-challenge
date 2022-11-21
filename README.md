@@ -8,20 +8,25 @@ python generate.py
 python crop_images_2.py
 ```
 ```bash
-G:.
+
 ├───scale_1.0
 │   └───liveness_face
 │       └───datasets
 │           └───datasets_train
+|   └───label_list.txt
 ├───scale_2.7
 │   └───liveness_face
 │       └───datasets
 │           └───datasets_train
+|   └───label_list.txt
 └───scale_4
     └───liveness_face
         └───datasets
-            └───datasets_train        
+            └───datasets_train 
+    └───label_list.txt
 ```
+`Config params: ./src/default_config.py`
+
 `Step 3: training model`
 ```bash
 python train.py
