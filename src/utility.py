@@ -32,3 +32,8 @@ def parse_model_name(model_name):
 def make_if_not_exist(folder_path):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
+
+def set_parameter_requires_grad(model, feature_extracting):
+    if feature_extracting:
+        for param in model.parameters():
+            param.requires_grad = False

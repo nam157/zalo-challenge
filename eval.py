@@ -24,8 +24,7 @@ def test(image_name, model_dir, device_id):
         image = image_name
 
     image_bbox = model_test.get_bbox(image)
-    prediction = np.zeros((1, 3))
-    test_speed = 0
+    prediction = np.zeros((1, 2))
     # sum the prediction from single model's result
     for model_name in os.listdir(model_dir):
         h_input, w_input, model_type, scale = parse_model_name(model_name)
@@ -41,13 +40,11 @@ def test(image_name, model_dir, device_id):
         if scale is None:
             param["crop"] = False
         img = image_cropper.crop(**param)
-        start = time.time()
         prediction += model_test.predict(img, os.path.join(model_dir, model_name))
-        test_speed += time.time() - start
 
     # draw result of prediction
     label = np.argmax(prediction)
-    value = prediction[0][label] / 2
+    value = prediction[0][label]
     if label == 1:
         print("Image is Real Face. Score: {:.2f}.".format(value))
         return value
@@ -66,13 +63,15 @@ def main(arg):
         c = 0
         while cap.isOpened():
             ret, frame = cap.read()
-            try:
-                # if c % 5 == 0:
-                score = test(frame, args.model_dir, args.device_id)
-                ls.append(score)
-                # c +=1
-            except:
-                break
+            score = test(frame, args.model_dir, args.device_id)
+            ls.append(score)
+            # try:
+            #     if c % 10 == 0:
+            #         score = test(frame, args.model_dir, args.device_id)
+            #         ls.append(score)
+            #     c +=1
+            # except:
+            #     break
         print(ls)
         target[video_name] = sum(ls) / len(ls)
     df = pd.DataFrame(list(target.items()), columns=["fname", "liveness_score"])
@@ -88,7 +87,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_dir",
         type=str,
-        default="/home/ai/challenge/Silent-Face-Anti-Spoofing/resources/test_2/",
+        default="/home/ai/challenge/darf-nam/zalo-challenge/resources/ckpt_test/",
         help="model_lib used to test",
     )
     parser.add_argument(

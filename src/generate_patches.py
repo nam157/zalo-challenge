@@ -3,9 +3,9 @@
 Create patch from original input image by using bbox coordinate
 """
 import os
+
 import cv2
 import numpy as np
-
 
 
 class CropImage:
@@ -65,6 +65,7 @@ class CropImage:
             ]
             dst_img = cv2.resize(img, (out_w, out_h))
         return dst_img
+
 
 def process_zalo(db_dir, save_dir, scale, crop_sz):
     if not os.path.exists(save_dir):

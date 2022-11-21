@@ -14,6 +14,7 @@ from src.model_lib.MiniFASNet import (
     MiniFASNetV2,
     MiniFASNetV2SE,
 )
+from src.utility import set_parameter_requires_grad
 
 
 class FTGenerator(nn.Module):
@@ -58,9 +59,9 @@ class MultiFTNet(nn.Module):
             img_channel=img_channel,
         )
         self.FTGenerator = FTGenerator(in_channels=128)
-
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if pre_trained is not None:
-            state_dict = torch.load(pre_trained,map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+            state_dict = torch.load(pre_trained, map_location=device)
             keys = iter(state_dict)
             first_layer_name = keys.__next__()
             if first_layer_name.find("module.") >= 0:
@@ -73,6 +74,11 @@ class MultiFTNet(nn.Module):
                 self.model.load_state_dict(new_state_dict)
         else:
             self._initialize_weights()
+        set_parameter_requires_grad(self.model, feature_extracting=True)
+        self.model.prob = nn.Linear(
+            in_features=self.model.bn.num_features, out_features=2, bias=False
+        )
+        self.model.to(device)
 
     def _initialize_weights(self):
         for m in self.modules():
@@ -119,13 +125,13 @@ if __name__ == "__main__":
         kernel_size = ((height + 15) // 16, (width + 15) // 16)
         return kernel_size
 
-    ckpt = "/home/ai/challenge/Silent-Face-Anti-Spoofing/resources/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth"
+    ckpt_path = "/home/ai/challenge/Silent-Face-Anti-Spoofing/resources/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth"
     model = MultiFTNet(
         img_channel=3,
         conv6_kernel=get_kernel(80, 80),
         num_classes=3,
         training=False,
-        pre_trained=ckpt,
+        pre_trained=ckpt_path,
     )
     model = torch.nn.DataParallel(model).cuda()
     img = torch.randn((4, 3, 80, 80)).cuda()

@@ -5,6 +5,7 @@ import warnings
 
 import cv2
 import numpy as np
+import pandas as pd
 
 from model_test import AntiSpoofPredict
 from src.generate_patches import CropImage
@@ -22,7 +23,7 @@ def test(image_name, model_dir, device_id):
         image = image_name
 
     image_bbox = model_test.get_bbox(image)
-    prediction = np.zeros((1, 3))
+    prediction = np.zeros((1, 2))
     test_speed = 0
     # sum the prediction from single model's result
     for model_name in os.listdir(model_dir):
@@ -45,15 +46,17 @@ def test(image_name, model_dir, device_id):
 
     # draw result of prediction
     label = np.argmax(prediction)
-    value = prediction[0][label] / 2
+    value = prediction[0][label]
     if label == 1:
         print("Image is Real Face. Score: {:.2f}.".format(value))
         result_text = "RealFace Score: {:.2f}".format(value)
         color = (255, 0, 0)
+        return value
     else:
         print("Image is Fake Face. Score: {:.2f}.".format(1 - value))
         result_text = "FakeFace Score: {:.2f}".format(value)
         color = (0, 0, 255)
+        return 1-value
     print("Prediction cost {:.2f} s".format(test_speed))
     cv2.rectangle(
         image,
@@ -73,14 +76,31 @@ def test(image_name, model_dir, device_id):
 
 
 def main(arg):
-    cap = cv2.VideoCapture(arg.path)
-    while cap.isOpened():
-        ret, frame = cap.read()
-        test(frame, args.model_dir, args.device_id)
-        cv2.imshow("video",frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    cv2.destroyAllWindows()
+    # cap = cv2.VideoCapture(arg.path)
+    # while cap.isOpened():
+    #     ret, frame = cap.read()
+    #     test(frame, args.model_dir, args.device_id)
+    target = {}
+    for video_name in os.listdir(args.image_name):
+        print("Processing video: " + video_name)
+        video_path = os.path.join(args.image_name, video_name)
+        cap = cv2.VideoCapture(video_path)
+        ls = []
+        c = 0
+        while cap.isOpened():
+            ret, frame = cap.read()
+            try:
+                if c % 10 == 0:
+                    score = test(frame, args.model_dir, args.device_id)
+                    ls.append(score)
+                c +=1
+            except:
+                break
+        print(ls)
+        target[video_name] = sum(ls) / len(ls)
+    df = pd.DataFrame(list(target.items()), columns=["fname", "liveness_score"])
+    df.to_csv("predict.csv", index=False, encoding="utf-8", float_format="%.10f")
+
 
 if __name__ == "__main__":
     desc = "test"
@@ -91,11 +111,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_dir",
         type=str,
-        default="./resources/test_2/",
+        default="/home/ai/challenge/darf-nam/zalo-challenge/resources/ckpt_test/",
         help="model_lib used to test",
     )
     parser.add_argument(
-        "--path", type=int, help="image used to test"
+        "--image_name",
+        type=str,
+        help="image used to test",
+        default="/home/ai/challenge/Silent-Face-Anti-Spoofing/datasets/videos/",
     )
     args = parser.parse_args()
     main(args)

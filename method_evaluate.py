@@ -1,11 +1,9 @@
 import numpy as np
-from sklearn.metrics import roc_curve
 import torch.nn.functional as F
+from sklearn.metrics import roc_curve
 
 
 def get_tp_fp_rates(y_true, y_pred):
-    y_pred = F.softmax(y_pred).detach().numpy()
-    y_pred = np.argmax(y_pred,axis=1)
     fpr, tpr, threshold = roc_curve(y_true, y_pred, pos_label=1)
     return fpr, tpr, threshold
 

@@ -5,11 +5,16 @@ from torchvision import transforms as tortrans
 from src.data_io import transform as trans
 from src.data_io.dataset_folder import Dataset
 
-labels = open("G:/zalo_challenge/liveness_face/antispoofing_zalo/datasets/images_train/datasets/images/file_label.txt", "r")
+labels = open(
+    "/home/ai/challenge/datasets/file_label.txt",
+    # "/home/ai/challenge/datasets/crops_80x80/scale_4.0/file_list.txt",
+    "r",
+)
 data_label = labels.readlines()
 
 train_label, val_label = train_test_split(data_label, test_size=0.2, random_state=111)
 
+print(f'Train: {len(train_label)},Validation: {len(val_label)}')
 
 def get_train_loader(conf):
     train_transform = trans.Compose(
@@ -41,7 +46,7 @@ def get_train_loader(conf):
 
 
 def get_val_loader(conf):
-    train_transform = trans.Compose(
+    val_transform = trans.Compose(
         [
             trans.ToPILImage(),
             tortrans.Resize(size=tuple(conf.input_size)),
@@ -49,17 +54,17 @@ def get_val_loader(conf):
         ]
     )
 
-    trainset = Dataset(
+    valset = Dataset(
         label_list=val_label,
-        transforms=train_transform,
+        transforms=val_transform,
         ft_width=conf.ft_width,
         ft_height=conf.ft_height,
     )
-    train_loader = DataLoader(
-        trainset,
+    val_loader = DataLoader(
+        valset,
         batch_size=conf.batch_size,
-        shuffle=True,
+        shuffle=False,
         pin_memory=True,
         num_workers=16,
     )
-    return train_loader
+    return val_loader

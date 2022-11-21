@@ -78,14 +78,14 @@ class AntiSpoofPredict(Detection):
         state_dict = torch.load(model_path, map_location=self.device)
         if list(state_dict.keys())[-1] == "module.prob.weight":
             self.model = MODEL_MAPPING[model_type](
-                conv6_kernel=self.kernel_size, img_channel=3
+                conv6_kernel=self.kernel_size, img_channel=3, num_classes=2
             ).to(self.device)
         else:
             self.model = MultiFTNet(
                 model_type=MODEL_MAPPING[model_type],
                 conv6_kernel=self.kernel_size,
                 img_channel=3,
-                num_classes=3,
+                num_classes=2,
                 training=False,
                 pre_trained=None,
             ).to(self.device)
