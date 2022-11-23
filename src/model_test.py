@@ -7,12 +7,8 @@ import torch
 import torch.nn.functional as F
 
 from src.data_io import transform as trans
-from src.model_lib.MiniFASNet import (
-    MiniFASNetV1,
-    MiniFASNetV1SE,
-    MiniFASNetV2,
-    MiniFASNetV2SE,
-)
+from src.model_lib.MiniFASNet import (MiniFASNetV1, MiniFASNetV1SE,
+                                      MiniFASNetV2, MiniFASNetV2SE)
 from src.model_lib.MultiFTNet import MultiFTNet
 from src.utility import get_kernel, parse_model_name
 
@@ -26,7 +22,9 @@ MODEL_MAPPING = {
 
 class Detection:
     def __init__(self):
-        caffemodel = "./resources/pre-trained/detection_model/Widerface-RetinaFace.caffemodel"
+        caffemodel = (
+            "./resources/pre-trained/detection_model/Widerface-RetinaFace.caffemodel"
+        )
         deploy = "./resources/pre-trained/detection_model/deploy.prototxt"
         self.detector = cv2.dnn.readNetFromCaffe(deploy, caffemodel)
         self.detector_confidence = 0.6
@@ -59,11 +57,9 @@ class Detection:
 
 
 class AntiSpoofPredict(Detection):
-    def __init__(self, device_id):
+    def __init__(self):
         super(AntiSpoofPredict, self).__init__()
-        self.device = torch.device(
-            "cuda:{}".format(device_id) if torch.cuda.is_available() else "cpu"
-        )
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _load_model(self, model_path):
         # define model
@@ -99,7 +95,6 @@ class AntiSpoofPredict(Detection):
                 name_key = key[7:]
                 new_state_dict[name_key] = value
             self.model.load_state_dict(new_state_dict)
-            print("load ckpt successfully")
         else:
             self.model.load_state_dict(state_dict)
 

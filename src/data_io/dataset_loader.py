@@ -7,7 +7,6 @@ from src.data_io.dataset_folder import Dataset
 
 labels = open(
     "/home/ai/challenge/datasets/file_label.txt",
-    # "/home/ai/challenge/datasets/crops_80x80/scale_4.0/file_list.txt",
     "r",
 )
 data_label = labels.readlines()

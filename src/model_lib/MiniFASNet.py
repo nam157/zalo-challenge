@@ -1,23 +1,7 @@
-# -*- coding: utf-8 -*-
-# @Time : 20-6-3 下午4:45
-# @Author : zhuying
-# @Company : Minivision
-# @File : MiniFASNet.py
-# @Software : PyCharm
 import torch
 import torch.nn.functional as F
-from torch.nn import (
-    AdaptiveAvgPool2d,
-    BatchNorm1d,
-    BatchNorm2d,
-    Conv2d,
-    Linear,
-    Module,
-    PReLU,
-    ReLU,
-    Sequential,
-    Sigmoid,
-)
+from torch.nn import (AdaptiveAvgPool2d, BatchNorm1d, BatchNorm2d, Conv2d,
+                      Linear, Module, PReLU, ReLU, Sequential, Sigmoid)
 
 
 class L2Norm(Module):

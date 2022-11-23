@@ -14,9 +14,8 @@ from src.utility import parse_model_name
 warnings.filterwarnings("ignore")
 
 
-def test(image_name, model_dir, device_id):
-    model_test = AntiSpoofPredict(device_id)
-    # print(model_test)
+def test(image_name, model_dir):
+    model_test = AntiSpoofPredict()
     image_cropper = CropImage()
     if isinstance(image_name, str):
         image = cv2.imread(image_name)
@@ -44,7 +43,7 @@ def test(image_name, model_dir, device_id):
 
     # draw result of prediction
     label = np.argmax(prediction)
-    value = prediction[0][label]
+    value = prediction[0][label] / 2
     if label == 1:
         print("Image is Real Face. Score: {:.2f}.".format(value))
         return value
@@ -65,7 +64,7 @@ def main(arg):
             ret, frame = cap.read()
             try:
                 if c % 10 == 0:
-                    score = test(frame, args.model_dir, args.device_id)
+                    score = test(frame, args.model_dir)
                     ls.append(score)
                 c += 1
             except:
@@ -76,11 +75,7 @@ def main(arg):
 
 
 if __name__ == "__main__":
-    desc = "test"
-    parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument(
-        "--device_id", type=int, default=1, help="which gpu id, [0/1/2/3]"
-    )
+    parser = argparse.ArgumentParser(description="test")
     parser.add_argument(
         "--model_dir",
         type=str,
