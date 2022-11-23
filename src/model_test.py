@@ -99,7 +99,7 @@ class AntiSpoofPredict(Detection):
                 name_key = key[7:]
                 new_state_dict[name_key] = value
             self.model.load_state_dict(new_state_dict)
-            print("load ckpt successfully")
+            # print("load ckpt successfully")
         else:
             self.model.load_state_dict(state_dict)
 
