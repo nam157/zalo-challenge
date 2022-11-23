@@ -1,9 +1,17 @@
-FROM python:3
+FROM python:3.9
+USER root
 
-WORKDIR /f/zalo-challenge/
+RUN apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install ffmpeg libavcodec-extra -y && \
+    apt-get update
+RUN python3 -m pip install --upgrade pip
 
-COPY . .
+RUN pip install opencv-python
+RUN pip install scikit-learn
+RUN pip install pandas
+RUN pip3 install torch torchvision torchaudio
 
-RUN pip install -r requirements.txt
+COPY . zalo_challenge
+WORKDIR /zalo_challenge
 
-CMD ["python","test.py"]
+CMD /bin/bash

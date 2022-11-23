@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time : 20-6-3 下午5:14
-# @Author : zhuying
-# @Company : Minivision
-# @File : MultiFTNet.py
-# @Software : PyCharm
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -74,7 +68,7 @@ class MultiFTNet(nn.Module):
                 self.model.load_state_dict(new_state_dict)
         else:
             self._initialize_weights()
-        set_parameter_requires_grad(self.model, feature_extracting=True)
+        # set_parameter_requires_grad(self.model, feature_extracting=True)
         self.model.prob = nn.Linear(
             in_features=self.model.bn.num_features, out_features=2, bias=False
         )

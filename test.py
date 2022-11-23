@@ -44,9 +44,8 @@ def test(image_name, model_dir, device_id):
         prediction += model_test.predict(img, os.path.join(model_dir, model_name))
         test_speed += time.time() - start
 
-    # draw result of prediction
     label = np.argmax(prediction)
-    value = prediction[0][label]
+    value = prediction[0][label] / 2
     if label == 1:
         print("Image is Real Face. Score: {:.2f}.".format(value))
         color = (255, 0, 0)
@@ -58,17 +57,17 @@ def test(image_name, model_dir, device_id):
 
 
 def main(arg):
+    print('preprocessing ...')
     target = {}
-    for video_name in os.listdir(args.image_name):
-        print("Processing video: " + video_name)
-        video_path = os.path.join(args.image_name, video_name)
+    for video_name in os.listdir(args.data):
+        video_path = os.path.join(args.data, video_name)
         cap = cv2.VideoCapture(video_path)
         ls = []
         c = 0
         while cap.isOpened():
             ret, frame = cap.read()
             try:
-                if c % 10 == 0:
+                if c % 5 == 0:
                     score = test(frame, args.model_dir, args.device_id)
                     ls.append(score)
                 c += 1
@@ -77,7 +76,9 @@ def main(arg):
         print(ls)
         target[video_name] = sum(ls) / len(ls)
     df = pd.DataFrame(list(target.items()), columns=["fname", "liveness_score"])
-    df.to_csv("predict.csv", index=False, encoding="utf-8", float_format="%.10f")
+    os.makedirs('results/',exist_ok=True)
+    df.to_csv("results/submission.csv", index=False, encoding="utf-8", float_format="%.10f")
+    print('output will be saved in /result/submission.csv')
 
 
 if __name__ == "__main__":
@@ -89,14 +90,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_dir",
         type=str,
-        default="/home/ai/challenge/darf-nam/zalo-challenge/resources/ckpt_test/",
+        default="./resources/ckpt/",
         help="model_lib used to test",
     )
     parser.add_argument(
-        "--image_name",
+        "--data",
         type=str,
         help="image used to test",
-        default="/home/ai/challenge/Silent-Face-Anti-Spoofing/datasets/videos/",
+        default='./data/',
     )
     args = parser.parse_args()
     main(args)
