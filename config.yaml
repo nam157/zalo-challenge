@@ -1,7 +1,12 @@
-epochs: 500
+epochs: 10
 random_state: 42
-fold: 8
-batch_size: 16
+fold: 5
+
+batch_size: 128
 num_workers: 8
 lr: 1.0e-3
+
+T_max: 2500
+eta_min: 1.0e-8
+
 save_ckpt_dir: ckpt_vit/
