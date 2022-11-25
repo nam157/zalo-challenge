@@ -86,7 +86,8 @@ def main(video_dir,model_dir):
                 break
         target[video_name] = sum(ls)/len(ls)
     dataframe = pd.DataFrame(list(target.items()),columns=['fname','liveness_score'])
-    dataframe.to_csv("submission.csv",index=False)
+    os.makedirs('/result',exist_ok=True)
+    dataframe.to_csv("/result/submission.csv",index=False)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="test")
     parser.add_argument(
