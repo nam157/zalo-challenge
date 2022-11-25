@@ -1,2 +1,2 @@
 export PYTHONPATH=.
-python predict.py --model_dir resources/ckpt/ --data data/
+python predict_onnx.py --model_dir resources/ckpt_onnx/ --data ./data

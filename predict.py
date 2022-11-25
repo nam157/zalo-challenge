@@ -1,7 +1,7 @@
 import argparse
 import os
 import warnings
-
+import time
 import cv2
 import numpy as np
 import pandas as pd
@@ -54,10 +54,10 @@ def main(args):
         while cap.isOpened():
             _, frame = cap.read()
             try:
-                if c % 5 == 0:
-                    score = test(frame, args.model_dir)
-                    ls.append(score)
-                c += 1
+                # if c % 5 == 0:
+                score = test(frame, args.model_dir)
+                ls.append(score)
+                # c += 1
             except:
                 break
         target[video_name] = sum(ls) / len(ls)
@@ -84,4 +84,9 @@ if __name__ == "__main__":
         default="./data/",
     )
     args = parser.parse_args()
+
+    print('Processing ... ')
+    start_time = time.time()
     main(args)
+    print("Save file")
+    print(f"Time: {time.time() - start_time}")
