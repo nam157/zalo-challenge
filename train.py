@@ -9,9 +9,7 @@ def parse_args():
     """parsing and configuration"""
     desc = "Silence-FAS"
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument(
-        "--device_ids", type=str, default="1", help="which gpu id, 0123"
-    )
+    parser.add_argument("--device_ids", type=str, default="0", help="which gpu id, 0123")
     parser.add_argument(
         "--patch_info",
         type=str,

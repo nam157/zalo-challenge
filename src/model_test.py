@@ -53,7 +53,8 @@ class Detection:
             out[max_conf_index, 6] * height,
         )
         bbox = [int(left), int(top), int(right - left + 1), int(bottom - top + 1)]
-        return bbox
+        bbox_org = [left, top, right, bottom]
+        return bbox, bbox_org
 
 
 class AntiSpoofPredict(Detection):

@@ -33,10 +33,8 @@ class TrainMain:
         self.start_epoch = 0
         self.train_loader = get_train_loader(self.conf)
         self.valid_loader = get_val_loader(self.conf)
-
+        scale = (self.conf.label_list.split("/")[-2])
         wandb.init(
-            project="zalo-challenge-liveness-detection",
-            entity="namnguyen3",
             config={
                 "architecture": self.conf.model_type,
                 "epochs": self.conf.epochs,
@@ -47,8 +45,10 @@ class TrainMain:
                 "lr": self.conf.lr,
                 "input_size": self.conf.input_size,
                 "kernel_size": self.conf.kernel_size,
-                "pre_trained": os.path.basename(self.conf.pre_trained),
+                "pre_trained": os.path.basename(self.conf.pre_trained) if self.conf.pre_trained is not None else "null",
             },
+            name=f"{self.conf.model_type}_{scale}",
+            project="CNN-spoofing"
         )
 
     def train_model(self):
@@ -74,6 +74,12 @@ class TrainMain:
                 amsgrad=True,
                 weight_decay=1.0e-5,
             )
+        elif self.conf.optimizer_type == "adamw":
+            self.optimizer = optim.AdamW(
+                self.model.module.parameters(),
+                lr=self.conf.lr,
+                weight_decay=1.0e-5,
+            )
         else:
             self.optimizer = None
 
@@ -81,14 +87,20 @@ class TrainMain:
             self.schedule_lr = optim.lr_scheduler.MultiStepLR(
                 self.optimizer, self.conf.milestones, self.conf.gamma, -1
             )
+            
         elif self.conf.schedule_type == "ReduceLROnPlateau":
             self.schedule_lr = optim.lr_scheduler.ReduceLROnPlateau(
                 self.optimizer, mode="min", factor=0.01, verbose=True, patience=5
             )
         else:
             self.schedule_lr = optim.lr_scheduler.CosineAnnealingLR(
-                self.optimizer, T_max=10, eta_min=0.00000001, verbose=True
+                self.optimizer, T_max=50, eta_min=1e-6, verbose=True
             )
+        
+        self.swa_model = torch.optim.swa_utils.AveragedModel(self.model)
+        self.swa_start = 150
+        from torch.optim.swa_utils import AveragedModel, SWALR
+        self.swa_scheduler = SWALR(self.optimizer, swa_lr=0.05)
 
     def _define_network(self):
         param = {
@@ -107,6 +119,8 @@ class TrainMain:
         return model
 
     def _train_stage(self):
+        best_eer_val = float('inf')
+        best_loss_val = float('inf')
         for e in range(self.start_epoch, self.conf.epochs):
             print(f"--------Epoch----------: {e}")
             (
@@ -124,6 +138,24 @@ class TrainMain:
                 total_pred,
                 total_label,
             ) = self._valid_batch_data()
+
+            # Ensure wandb.init() was called successfully
+            if wandb.run is None:
+                print("Wandb is not initialized correctly. Re-initializing.")
+                wandb.init(
+                    config={
+                        "architecture": self.conf.model_type,
+                        "epochs": self.conf.epochs,
+                        "batch_size": self.conf.batch_size,
+                        "optimizer": self.conf.optimizer_type,
+                        "schedule_type": self.conf.schedule_type,
+                        "label_list": os.path.basename(self.conf.label_list),
+                        "lr": self.conf.lr,
+                        "input_size": self.conf.input_size,
+                        "kernel_size": self.conf.kernel_size,
+                        "pre_trained": os.path.basename(self.conf.pre_trained),
+                    },
+                )
 
             wandb.log(
                 {
@@ -145,21 +177,43 @@ class TrainMain:
                 }
             )
 
-            torch.save(
-                self.model.state_dict(),
-                self.conf.model_path + "/" + self.conf.name_ckpt + f"_{e}.pth",
-            )
-            artifact = wandb.Artifact("model", type="model")
-            artifact.add_file(
-                self.conf.model_path + "/" + self.conf.name_ckpt + f"_{e}.pth"
-            )
-            wandb.log_artifact(artifact)
-            wandb.join()
+            if eer_val < best_eer_val:
+                best_eer_val = eer_val
+                torch.save(
+                    self.model.state_dict(),
+                    self.conf.model_path + "/" + self.conf.name_ckpt + f"_best_eer.pth",
+                )
+            
+            if loss_val < best_loss_val:
+                best_loss_val = loss_val
+                torch.save(
+                    self.model.state_dict(),
+                    self.conf.model_path + "/" + self.conf.name_ckpt + f"_best_loss.pth",
+                )
 
-        if isinstance(self.conf.schedule_type, optim.lr_scheduler.ReduceLROnPlateau):
-            self.schedule_lr.step(loss_train)
-        else:
-            self.schedule_lr.step()
+            if e % self.conf.save_every == 0:
+                torch.save(
+                    self.model.state_dict(),
+                    self.conf.model_path + "/" + self.conf.name_ckpt + f"_{e}.pth",
+                )
+
+            if e > self.swa_start:
+                self.swa_model.update_parameters(self.model)
+                self.swa_scheduler.step()
+            
+            if isinstance(self.conf.schedule_type, optim.lr_scheduler.ReduceLROnPlateau):
+                self.schedule_lr.step(loss_val)
+            else:
+                self.schedule_lr.step()
+        
+        if self.swa_model is not None and self.swa_start < self.conf.epochs:
+            torch.optim.swa_utils.update_bn(self.train_loader, self.swa_model)
+            torch.save(
+                self.swa_model.state_dict(),
+                os.path.join(self.conf.model_path, f"{self.conf.name_ckpt}_swa_final.pth")
+            )
+        wandb.join()
+
 
     def _train_batch_data(self):
         self.model.train()

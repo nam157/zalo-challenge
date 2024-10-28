@@ -1,3 +1,15 @@
 __pycache__/
 .ipynb_checkpoints/
 .vscode/
+*.jpg
+*.png
+*.jpeg
+*.mp4
+*.avi
+*.mov
+*.pth
+*.onnx
+wandb/
+.vscode/
+*.json
+*.txt
